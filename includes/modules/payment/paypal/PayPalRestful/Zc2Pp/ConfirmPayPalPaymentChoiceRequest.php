@@ -6,10 +6,13 @@
  * @copyright Copyright 2023 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
+ *
+ * Last updated: v1.0.5
  */
 namespace PayPalRestful\Zc2Pp;
 
 use PayPalRestful\Common\Logger;
+use PayPalRestful\Zc2Pp\Address;
 
 class ConfirmPayPalPaymentChoiceRequest
 {
@@ -60,6 +63,7 @@ class ConfirmPayPalPaymentChoiceRequest
                     'surname' => $order->billing['lastname'],
                 ],
                 'email_address' => $order->customer['email_address'],
+                'address' => Address::get($order->billing),
                 'experience_context' => [
                     'payment_method_preference' => 'IMMEDIATE_PAYMENT_REQUIRED',    //- No eChecks, no means to test in the sandbox environment
                     'brand_name' => $brand_name,

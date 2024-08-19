@@ -6,7 +6,7 @@
  * @copyright Copyright 2023-2024 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.0.4
+ * Last updated: v1.0.5
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -122,11 +122,16 @@ class CreatePayPalOrderRequest extends ErrorInfo
         $this->validateOrderAmounts();
 
         // -----
-        // If this is a request to pay for the order using a credit card, add
-        // the 'card' payment source to the order-creation request.  Note that
-        // without a 'payment_source', the source defaults to 'paypal'.
+        // If this is a request to pay via PayPal Wallet, add the 'paypal' payment source
+        // to the order-creation request;
         //
-        if ($ppr_type === 'card') {
+        if ($ppr_type !== 'card') {
+            $this->request['payment_source']['paypal'] = $this->buildPayPalPaymentSource($order);
+        // -----
+        // If this is a request to pay for via a credit card, add the 'card' payment source
+        // to the order-creation request.
+        //
+        } else {
             $this->request['payment_source']['card'] = $this->buildCardPaymentSource($order, $cc_info);
 
             // -----
@@ -438,6 +443,19 @@ class CreatePayPalOrderRequest extends ErrorInfo
     protected function countItems(): int
     {
         return count($this->request['purchase_units'][0]['items']);
+    }
+
+    protected function buildPayPalPaymentSource(\order $order): array
+    {
+        $payment_source = [
+            'name' => [
+                'given_name' => $order->billing['firstname'],
+                'surname' => $order->billing['lastname'],
+            ],
+            'email_address' => $order->customer['email_address'],
+            'address' => Address::get($order->billing),
+        ];
+        return $payment_source;
     }
 
     protected function buildCardPaymentSource(\order $order, array $cc_info): array
