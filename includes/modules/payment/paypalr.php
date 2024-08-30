@@ -1130,7 +1130,6 @@ class paypalr extends base
         //
         $paypal_id = $order_response['id'];
         $status = $order_response['status'];
-        $create_time = $order_response['create_time'];
         unset(
             $order_response['id'],
             $order_response['status'],
@@ -1143,7 +1142,6 @@ class paypalr extends base
             'current' => $order_response,
             'id' => $paypal_id,
             'status' => $status,
-            'create_time' => $create_time,
             'guid' => $order_guid,
             'payment_source' => $ppr_type,
             'amount_mismatch' => $order_amount_mismatch,
