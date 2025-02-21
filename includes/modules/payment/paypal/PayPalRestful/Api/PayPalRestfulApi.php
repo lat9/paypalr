@@ -166,7 +166,7 @@ class PayPalRestfulApi extends ErrorInfo
         $this->paypalRequestId = $request_id;
     }
 
-    public function setPayPalMockResponse(strong $mock_response)
+    public function setPayPalMockResponse(string $mock_response)
     {
         $this->paypalMockResponse = $mock_response;
     }
