@@ -2193,7 +2193,9 @@ class paypalr extends base
         file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
 
         // We also delete the old ppr_webhook_main.php file if present
-        unlink(DIR_FS_CATALOG . 'ppr_webhook_main.php');
+        if (file_exists(DIR_FS_CATALOG . 'ppr_webhook_main.php')) {
+            unlink(DIR_FS_CATALOG . 'ppr_webhook_main.php');
+        }
 
         // -----
         // Define the module's current version so that the tableCheckup method
@@ -2248,8 +2250,11 @@ class paypalr extends base
         // Starting with v1.1.1, removing the payment module includes deleting
         // its root-directory listener, and the prior versions' ppr_webhook_main.php handler.
         //
-        unlink(DIR_FS_CATALOG . 'ppr_listener.php');
-        unlink(DIR_FS_CATALOG . 'ppr_webhook_main.php');
+        foreach (['ppr_listener.php', 'ppr_webhook_main.php'] as $file) {
+            if (file_exists(DIR_FS_CATALOG . $file)) {
+                unlink(DIR_FS_CATALOG . $file);
+            }
+        }
 
         $this->notify('NOTIFY_PAYMENT_PAYPALR_UNINSTALLED');
     }
