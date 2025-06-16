@@ -1107,7 +1107,7 @@ class paypalr extends base
             'expiry_year' => $cc_validation->cc_expiry_year,
             'name' => $cc_owner,
             'security_code' => $cvv_posted,
-            'webhook' => self::REDIRECT_LISTENER,
+            'redirect' => self::REDIRECT_LISTENER,
         ];
         return true;
     }

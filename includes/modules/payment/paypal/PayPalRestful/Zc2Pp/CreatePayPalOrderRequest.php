@@ -32,7 +32,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
      * stashed in a static variable!
      */
     protected Amount $amount;
-    
+
     /**
      * The currency-code in which the PayPal order is to be 'built'.
      */
@@ -228,7 +228,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
                 $this->log->write("!**-> getItems: Product #$products_id ($name) has a non-integer quantity ($quantity); item details cannot be included.");
                 continue;
             }
-            
+
             // -----
             // For the item list to be included, all items must have names that are at least
             // 1-character long.
@@ -472,8 +472,8 @@ class CreatePayPalOrderRequest extends ErrorInfo
             'expiry' => $cc_info['expiry_year'] . '-' . $cc_info['expiry_month'],
             'billing_address' => Address::get($order->billing),
             'experience_context' => [
-                'return_url' => $cc_info['webhook'] . '?op=3ds_return',
-                'cancel_url' => $cc_info['webhook'] . '?op=3ds_cancel',
+                'return_url' => $cc_info['redirect'] . '?op=3ds_return',
+                'cancel_url' => $cc_info['redirect'] . '?op=3ds_cancel',
             ],
         ];
         if (isset($_POST['ppr_cc_sca_always']) || (defined('MODULE_PAYMENT_PAYPALR_SCA_ALWAYS') && MODULE_PAYMENT_PAYPALR_SCA_ALWAYS === 'true')) {
@@ -510,7 +510,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
         if (isset($purchase_unit['shipping']['address'])) {
             $level_3['shipping_address'] = $purchase_unit['shipping']['address'];
         }
-        
+
         if (!isset($level_2) || empty($level_3)) {
             return [];
         }
