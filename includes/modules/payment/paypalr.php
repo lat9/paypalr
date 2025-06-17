@@ -33,9 +33,9 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    protected const CURRENT_VERSION = '1.1.1-beta3';
+    protected const CURRENT_VERSION = '1.2.0-beta1';
 
-    protected const WEBHOOK_NAME = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_webhook_main.php';
+    protected const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
     /**
      * name of this module
@@ -994,7 +994,7 @@ class paypalr extends base
         // at this time.
         //
         // Note: The 'wallet_payment_confirmed' element of the payment-module's session-based order is set by the
-        // ppr_webhook_main.php processing when the customer returns from selecting a payment means for
+        // ppr_listener.php processing when the customer returns from selecting a payment means for
         // the 'paypal' payment-source.
         //
         if ($ppr_type !== 'paypal' || isset($_SESSION['PayPalRestful']['Order']['wallet_payment_confirmed'])) {
@@ -1010,7 +1010,7 @@ class paypalr extends base
         // checkout_payment page if they cancelled-out from PayPal.
         //
         global $order;
-        $confirm_payment_choice_request = new ConfirmPayPalPaymentChoiceRequest(self::WEBHOOK_NAME, $order);
+        $confirm_payment_choice_request = new ConfirmPayPalPaymentChoiceRequest(self::REDIRECT_LISTENER, $order);
         $payment_choice_response = $this->ppr->confirmPaymentSource($_SESSION['PayPalRestful']['Order']['id'], $confirm_payment_choice_request->get());
         if ($payment_choice_response === false || $payment_choice_response['status'] !== PayPalRestfulApi::STATUS_PAYER_ACTION_REQUIRED) {
             $this->sendAlertEmail(
@@ -1107,7 +1107,7 @@ class paypalr extends base
             'expiry_year' => $cc_validation->cc_expiry_year,
             'name' => $cc_owner,
             'security_code' => $cvv_posted,
-            'webhook' => self::WEBHOOK_NAME,
+            'redirect' => self::REDIRECT_LISTENER,
         ];
         return true;
     }
@@ -1489,7 +1489,7 @@ class paypalr extends base
     protected function createCreditCardOrder(\order $order, array $order_info): array
     {
         // -----
-        // If we came back from a 3DS response (as set by ppr_webhook_main.php), check
+        // If we came back from a 3DS response (as set by ppr_listener.php), check
         // that response, redirecting back to the payment phase of checkout if an issue
         // was reported.  Otherwise, the payment is captured or authorized (depending on
         // the site's configuration) and the response from that action is returned to
@@ -1564,8 +1564,8 @@ class paypalr extends base
         }
 
         // -----
-        // If we've gotten this far, the order has been created at PayPal.  Save
-        // the pertinent information in the session.
+        // If we've gotten this far, the order has been created at PayPal.
+        // Save the pertinent information in the session.
         //
         $_SESSION['PayPalRestful']['Order']['status'] = $response['status'];
         $_SESSION['PayPalRestful']['Order']['id'] = $response['id'];
@@ -1573,8 +1573,8 @@ class paypalr extends base
         // -----
         // See if a 'payer-action' link is sent back (it will be if the customer needs to
         // perform an SCA verification).  If such a link is found, send the customer off
-        // to that verification link; they'll come back to the store via a webhook back
-        // to the payment module's /ppr_webhook_main.php.
+        // to that verification link; they'll come back to the store via a listener redirect
+        // back to the payment module's /ppr_listener.php.
         //
         foreach ($response['links'] as $next_link) {
             if ($next_link['rel'] === 'payer-action') {
@@ -2189,8 +2189,13 @@ class paypalr extends base
         // its root-directory webhook from a copy within the module's storefront
         // includes directory.
         //
-        $ppr_webhook_main = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_webhook_main.php');
-        file_put_contents(DIR_FS_CATALOG . 'ppr_webhook_main.php', $ppr_webhook_main);
+        $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_listener.php');
+        file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
+
+        // We also delete the old ppr_webhook_main.php file if present
+        if (file_exists(DIR_FS_CATALOG . 'ppr_webhook_main.php')) {
+            unlink(DIR_FS_CATALOG . 'ppr_webhook_main.php');
+        }
 
         // -----
         // Define the module's current version so that the tableCheckup method
@@ -2243,9 +2248,13 @@ class paypalr extends base
 
         // -----
         // Starting with v1.1.1, removing the payment module includes deleting
-        // its root-directory webhook.
+        // its root-directory listener, and the prior versions' ppr_webhook_main.php handler.
         //
-        unlink(DIR_FS_CATALOG . 'ppr_webhook_main.php');
+        foreach (['ppr_listener.php', 'ppr_webhook_main.php'] as $file) {
+            if (file_exists(DIR_FS_CATALOG . $file)) {
+                unlink(DIR_FS_CATALOG . $file);
+            }
+        }
 
         $this->notify('NOTIFY_PAYMENT_PAYPALR_UNINSTALLED');
     }
