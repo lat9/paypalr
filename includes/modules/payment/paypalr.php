@@ -2185,9 +2185,9 @@ class paypalr extends base
         }
 
         // -----
-        // Starting with v1.1.1, installing the payment module includes creating
-        // its root-directory listeners/handlers from a copy within the module's storefront
-        // includes directory.
+        // Starting with v1.2.0, installing the payment module includes creating
+        // its root-directory listeners/handlers from a copy within the module's
+        // storefront includes directory.
         //
         $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_listener.php');
         file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
