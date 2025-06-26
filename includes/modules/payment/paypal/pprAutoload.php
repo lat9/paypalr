@@ -1,11 +1,14 @@
 <?php
 /**
- * @copyright Copyright 2023 Zen Cart Development Team
+ * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
+ *
+ *  Last updated: v1.2.0
+ *
  */
-global $psr4Autoloader;
 
+global $psr4Autoloader;
 $psr4Autoloader->addPrefix('PayPalRestful\Admin', DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/Admin');
 $psr4Autoloader->addPrefix('PayPalRestful\Admin\Formatters', DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/Admin/Formatters');
 $psr4Autoloader->addPrefix('PayPalRestful\Api', DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/Api');
