@@ -2186,11 +2186,14 @@ class paypalr extends base
 
         // -----
         // Starting with v1.1.1, installing the payment module includes creating
-        // its root-directory webhook from a copy within the module's storefront
+        // its root-directory listeners/handlers from a copy within the module's storefront
         // includes directory.
         //
         $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_listener.php');
         file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
+
+        $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_webhook.php');
+        file_put_contents(DIR_FS_CATALOG . 'ppr_webhook.php', $ppr_listener);
 
         // We also delete the old ppr_webhook_main.php file if present
         if (file_exists(DIR_FS_CATALOG . 'ppr_webhook_main.php')) {
@@ -2247,10 +2250,10 @@ class paypalr extends base
         $db->Execute("DELETE FROM " . TABLE_CONFIGURATION . " WHERE configuration_key LIKE 'MODULE\_PAYMENT\_PAYPALR\_%'");
 
         // -----
-        // Starting with v1.1.1, removing the payment module includes deleting
-        // its root-directory listener, and the prior versions' ppr_webhook_main.php handler.
+        // Starting with v1.1.1, removing the payment module includes deleting its root-directory
+        // listener and webhook handlers, and the prior versions' ppr_webhook_main.php handler.
         //
-        foreach (['ppr_listener.php', 'ppr_webhook_main.php'] as $file) {
+        foreach (['ppr_listener.php', 'ppr_webhook.php', 'ppr_webhook_main.php'] as $file) {
             if (file_exists(DIR_FS_CATALOG . $file)) {
                 unlink(DIR_FS_CATALOG . $file);
             }

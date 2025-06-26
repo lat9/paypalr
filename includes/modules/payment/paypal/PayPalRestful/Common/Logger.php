@@ -2,10 +2,10 @@
 /**
  * Debug logging class for the PayPalRestful (paypalr) Payment Module
  *
- * @copyright Copyright 2023-2024 Zen Cart Development Team
+ * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.0.4
+ * Last updated: v1.2.0
  */
 
 namespace PayPalRestful\Common;
@@ -26,17 +26,21 @@ class Logger
     // -----
     // Class constructor.
     //
-    public function __construct()
+    public function __construct(string $uniqueName = '')
     {
+        global $current_page_base;
         // -----
-        // Using the same log-file name for each page-load.  If it's already set,
-        // simply return.
+        // Using the same log-file name for each page-load.
+        // If it's already set, simply return.
         //
         if (isset(self::$debugLogFile)) {
             return;
         }
-
-        if (IS_ADMIN_FLAG === false) {
+        
+        if (!empty($current_page_base) && \str_contains($current_page_base, 'webhook')) {
+            $logfile_suffix = 'webhook-' . $uniqueName;
+            $logfile_suffix = trim($logfile_suffix, '-');
+        } elseif (IS_ADMIN_FLAG === false) {
             $logfile_suffix = 'c-' . ($_SESSION['customer_id'] ?? 'na') . '-' . Helpers::getCustomerNameSuffix();
         } else {
             $logfile_suffix = 'adm-a' . $_SESSION['admin_id'];
