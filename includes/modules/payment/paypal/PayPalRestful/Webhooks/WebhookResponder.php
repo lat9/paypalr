@@ -76,7 +76,7 @@ class WebhookResponder
 
         $transmissionId = $headers['Paypal-Transmission-Id'];
         $timestamp = $headers['Paypal-Transmission-Time'];
-        $crc = \crc32($this->webhook->getRawBody());
+        $crc = \hash('crc32', $this->webhook->getRawBody());
         $calculatedSignature = "$transmissionId|$timestamp|$this->webhook_listener_subscribe_id|$crc";
         $transmissionSignature = $headers['Paypal-Transmission-Sig'];
         $decodedSignature = base64_decode($transmissionSignature);

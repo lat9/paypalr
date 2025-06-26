@@ -2192,8 +2192,8 @@ class paypalr extends base
         $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_listener.php');
         file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
 
-        $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_webhook.php');
-        file_put_contents(DIR_FS_CATALOG . 'ppr_webhook.php', $ppr_listener);
+        $ppr_webhook = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_webhook.php');
+        file_put_contents(DIR_FS_CATALOG . 'ppr_webhook.php', $ppr_webhook);
 
         // We also delete the old ppr_webhook_main.php file if present
         if (file_exists(DIR_FS_CATALOG . 'ppr_webhook_main.php')) {
