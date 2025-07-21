@@ -20,6 +20,8 @@ class WebhookController
 {
     public function __invoke(): bool|null
     {
+        defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
+
         // Inspect webhook
         $request_method = $_SERVER['REQUEST_METHOD'];
         $request_headers = getallheaders();
@@ -67,11 +69,14 @@ class WebhookController
             return false;
         }
 
-        // Now that verification has passed, dispatch the webhook according to the declared event_type
-
         $ppr_logger->write("\n\n" . 'webhook verification passed', false, 'before');
 
+        // Log that we received a validated webhook
+        $this->saveToDatabase($user_agent, $request_method, $request_body, $request_headers);
 
+        // Now that verification has passed, dispatch the webhook according to the declared event_type
+
+        // Lookup class name
         $objectName = 'PayPalRestful\Webhooks\Events\\' . $this->strToStudly($event);
 
         if (class_exists($objectName)) {
@@ -79,7 +84,7 @@ class WebhookController
 
             $call = new $objectName($webhook);
             if ($call->eventTypeIsSupported()) {
-                $ppr_logger->write("\n\n" . 'webhook event supported by ' . $objectName, false, 'before');
+                $ppr_logger->write("\n\n" . 'webhook event supported by ' . $objectName . "\n", false, 'before');
 
                 // dispatch to take the necessary action for the webhook
                 $call->action();
@@ -101,4 +106,42 @@ class WebhookController
         return implode($studlyWords);
     }
 
+    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, string|array $request_headers): void
+    {
+        $json_body = json_decode($request_body, true);
+
+        $sql_data_array = [
+            'webhook_id' => $json_body['id'] ?? '(webhook id not determined)',
+            'event_type' => $json_body['event_type'] ?? '(event not determined)',
+            'user_agent' => $user_agent,
+            'request_method' => $request_method,
+            'request_headers' => \json_encode($request_headers ?? []),
+            'body' => $request_body,
+        ];
+
+        $this->createDatabaseTable();
+        zen_db_perform(TABLE_PAYPAL_WEBHOOKS, $sql_data_array);
+    }
+
+    /**
+     * Ensure database table exists
+     */
+    protected function createDatabaseTable(): void
+    {
+        global $db;
+        $db->Execute(
+            "CREATE TABLE IF NOT EXISTS " . TABLE_PAYPAL_WEBHOOKS . " (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                webhook_id VARCHAR(64) NOT NULL,
+                event_type VARCHAR(64) DEFAULT NULL,
+                body LONGTEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                user_agent VARCHAR(192) DEFAULT NULL,
+                request_method VARCHAR(32) DEFAULT NULL,
+                request_headers TEXT DEFAULT NULL,
+                PRIMARY KEY (id),
+                KEY idx_pprwebhook_zen (webhook_id, id, created_at)
+            )"
+        );
+    }
 }
