@@ -18,6 +18,8 @@ use PayPalRestful\Common\Logger;
 
 class WebhookController
 {
+    protected Logger $ppr_logger;
+
     public function __invoke(): bool|null
     {
         defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
@@ -36,11 +38,11 @@ class WebhookController
         $logIdentifier = $json_body['id'] ?? $json_body['event_type'] ?? '';
 
         // create logger
-        $ppr_logger = new Logger($logIdentifier);
-        $ppr_logger->enableDebug(); // @TODO remove?
+        $this->ppr_logger = new Logger($logIdentifier);
+        $this->ppr_logger->enableDebug(); // @TODO remove?
 
         // log that we got an incoming webhook, and its details
-        $ppr_logger->write("ppr_webhook ($event, $user_agent, $request_method) starts.\n" . Logger::logJSON($json_body), true);
+        $this->ppr_logger->write("ppr_webhook ($event, $user_agent, $request_method) starts.\n" . Logger::logJSON($json_body), true);
 
         // set object
         $webhook = new WebhookObject($request_method, $request_headers, $request_body, $user_agent);
@@ -50,7 +52,7 @@ class WebhookController
 
         // Ensure that the incoming request contains headers etc relevant to PayPal
         if (!$verifier->shouldRespond()) {
-            $ppr_logger->write('ppr_webhook IGNORED DUE TO HEADERS MISMATCH' . print_r($request_headers, true), false, 'before');
+            $this->ppr_logger->write('ppr_webhook IGNORED DUE TO HEADERS MISMATCH' . print_r($request_headers, true), false, 'before');
             return false;
         }
 
@@ -64,27 +66,31 @@ class WebhookController
         }
 
         if ($status === false) {
-            $ppr_logger->write('ppr_webhook FAILED VERIFICATION', false, 'before');
+            $this->ppr_logger->write('ppr_webhook FAILED VERIFICATION', false, 'before');
             // The verifier already sent an HTTP response, so we just exit here.
             return false;
         }
 
-        $ppr_logger->write("\n\n" . 'webhook verification passed', false, 'before');
+        $this->ppr_logger->write("\n\n" . 'webhook verification passed', false, 'before');
 
         // Log that we received a validated webhook
         $this->saveToDatabase($user_agent, $request_method, $request_body, $request_headers);
 
         // Now that verification has passed, dispatch the webhook according to the declared event_type
+        return $this->dispatch($event, $webhook);
+    }
 
+    protected function dispatch(string $event, WebhookObject $webhook): bool
+    {
         // Lookup class name
         $objectName = 'PayPalRestful\Webhooks\Events\\' . $this->strToStudly($event);
 
         if (class_exists($objectName)) {
-//debug:    $ppr_logger->write('class found: ' . $objectName, false, 'before');
+//debug:    $this->ppr_logger->write('class found: ' . $objectName, false, 'before');
 
             $call = new $objectName($webhook);
             if ($call->eventTypeIsSupported()) {
-                $ppr_logger->write("\n\n" . 'webhook event supported by ' . $objectName . "\n", false, 'before');
+                $this->ppr_logger->write("\n\n" . 'webhook event supported by ' . $objectName . "\n", false, 'before');
 
                 // dispatch to take the necessary action for the webhook
                 $call->action();
@@ -92,7 +98,7 @@ class WebhookController
                 return true;
             }
         }
-        $ppr_logger->write('class NOT found: ' . $objectName, false, 'before');
+        $this->ppr_logger->write('class NOT found: ' . $objectName, false, 'before');
         return false;
     }
 
@@ -106,20 +112,26 @@ class WebhookController
         return implode($studlyWords);
     }
 
+    /**
+     * Save webhook records to database for subsequent querying
+     */
     protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, string|array $request_headers): void
     {
         $json_body = json_decode($request_body, true);
 
         $sql_data_array = [
-            'webhook_id' => $json_body['id'] ?? '(webhook id not determined)',
-            'event_type' => $json_body['event_type'] ?? '(event not determined)',
-            'user_agent' => $user_agent,
-            'request_method' => $request_method,
+            'webhook_id' => substr($json_body['id'] ?? '(webhook id not determined)', 0, 64),
+            'event_type' => substr($json_body['event_type'] ?? '(event not determined)', 0, 64),
+            'user_agent' => substr($user_agent, 0, 192),
+            'request_method' => substr($request_method, 0, 32),
             'request_headers' => \json_encode($request_headers ?? []),
             'body' => $request_body,
         ];
 
+        // ensure table exists
         $this->createDatabaseTable();
+        
+        // store
         zen_db_perform(TABLE_PAYPAL_WEBHOOKS, $sql_data_array);
     }
 
