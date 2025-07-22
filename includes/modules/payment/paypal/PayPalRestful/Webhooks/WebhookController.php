@@ -18,33 +18,35 @@ use PayPalRestful\Common\Logger;
 
 class WebhookController
 {
+    protected bool $enableDebugFileLogging = true;
     protected Logger $ppr_logger;
 
     public function __invoke(): bool|null
     {
         defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
 
-        // Inspect webhook
+        // Inspect and collect webhook details
         $request_method = $_SERVER['REQUEST_METHOD'];
         $request_headers = getallheaders();
         $request_body = file_get_contents('php://input');
         $json_body = json_decode($request_body, true);
         $user_agent = $_SERVER['HTTP_USER_AGENT'];
-
         $event = $json_body['event_type'] ?? '(event not determined)';
-
         $summary = $json_body['summary'] ?? '(summary not determined)';
-
         $logIdentifier = $json_body['id'] ?? $json_body['event_type'] ?? '';
 
-        // create logger
+        // Create logger, just for logging to /logs directory
         $this->ppr_logger = new Logger($logIdentifier);
-        $this->ppr_logger->enableDebug(); // @TODO remove?
+
+        // Enable logging
+        if ($this->enableDebugFileLogging) {
+            $this->ppr_logger->enableDebug();
+        }
 
         // log that we got an incoming webhook, and its details
         $this->ppr_logger->write("ppr_webhook ($event, $user_agent, $request_method) starts.\n" . Logger::logJSON($json_body), true);
 
-        // set object
+        // set object, which will be used for validation and for dispatching
         $webhook = new WebhookObject($request_method, $request_headers, $request_body, $user_agent);
 
         // prepare for verification
@@ -65,9 +67,10 @@ class WebhookController
             return null;
         }
 
+        // This should never happen, but we must abort if verification fails.
         if ($status === false) {
             $this->ppr_logger->write('ppr_webhook FAILED VERIFICATION', false, 'before');
-            // The verifier already sent an HTTP response, so we just exit here.
+            // The verifier already sent an HTTP response, so we just exit here by returning false to the ppr_webhook handler script.
             return false;
         }
 
@@ -130,7 +133,7 @@ class WebhookController
 
         // ensure table exists
         $this->createDatabaseTable();
-        
+
         // store
         zen_db_perform(TABLE_PAYPAL_WEBHOOKS, $sql_data_array);
     }
