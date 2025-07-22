@@ -8,6 +8,9 @@
  *
  * Last updated: v1.2.0
  *
+ * This webhook handler must listen on HTTPS port 443.
+ * For webhook message deliveries to be successful, the handler must respond with an HTTP 2xx success status every time a webhook is posted.
+ * Otherwise (if there is no response, or PayPal cannot connect, or if the server responds with a 404 or 500 error) PayPal will retry each delivery up to 25 times over 3 days.
  */
 
 /**
