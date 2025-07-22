@@ -12,7 +12,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.1.0
+ * Last updated: v1.2.0
  */
 namespace PayPalRestful\Api;
 
@@ -577,6 +577,45 @@ class PayPalRestfulApi extends ErrorInfo
         return $this->issueRequest('curlPatch', $option, $curl_options);
     }
 
+    // -----
+    // A common method for all DELETE requests to PayPal.
+    //
+    // Parameters:
+    // - option
+    //     The option to be performed, e.g. v1/notifications/webhooks/{id}
+    // - options_array
+    //     An (optional) array of options to be supplied, dependent on the 'option' to be sent.
+    //
+    // Return Values:
+    // - On success, an associative array containing the PayPal response.
+    // - On failure, returns false.  The details of the failure can be interrogated via the getErrorInfo method.
+    //
+    //
+    protected function curlDelete($option, $options_array = [])
+    {
+        if ($this->ch === false) {
+            $this->ch = curl_init();
+            if ($this->ch === false) {
+                $this->setErrorInfo(self::ERR_NO_CHANNEL, 'Unable to initialize the CURL channel.');
+                return false;
+            }
+        }
+
+        $url = $this->endpoint . $option;
+        $curl_options = array_replace($this->curlOptions, [CURLOPT_POST => true, CURLOPT_CUSTOMREQUEST => 'DELETE', CURLOPT_URL => $url]);
+        $curl_options = $this->setAuthorizationHeader($curl_options);
+        if (count($curl_options) === 0) {
+            return false;
+        }
+
+        if (count($options_array) !== 0) {
+            $curl_options[CURLOPT_POSTFIELDS] = json_encode($options_array);
+        }
+        curl_reset($this->ch);
+        curl_setopt_array($this->ch, $curl_options);
+        return $this->issueRequest('curlDelete', $option, $curl_options);
+    }
+
     protected function issueRequest(string $request_type, string $option, array $curl_options)
     {
         // -----
@@ -591,8 +630,8 @@ class PayPalRestfulApi extends ErrorInfo
             $response = false;
             $this->handleCurlError($request_type, $option, $curl_options);
         // -----
-        // Otherwise, a response was returned.  Call the common response-handler to determine
-        // whether or not an error occurred.
+        // Otherwise, a response was returned.
+        // Call the common response-handler to determine whether or not an error occurred.
         //
         } else {
             $response = $this->handleResponse($request_type, $option, $curl_options, $curl_response);
