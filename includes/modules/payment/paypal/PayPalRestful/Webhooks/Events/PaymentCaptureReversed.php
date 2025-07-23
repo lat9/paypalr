@@ -26,12 +26,16 @@ class PaymentCaptureReversed extends WebhookHandlerContract
 
         $this->log->write('PAYMENT.CAPTURE.REVERSED - action() triggered');
 
+        // Loading this to load all language file dependencies.
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
+
         // Add an order-status record indicating that PayPal reversed the payment capture (refunded the payment), unbeknownst to the merchant
 
         $summary = $this->data['summary'];
         $txnID = $this->data['resource']['id'];
 
-        $oID = FOO; // @TODO - lookup via $txnID
+        $oID = $txnID; // @TODO - lookup via $txnID
 
         $amount = $this->data['resource']['amount']['value'];
         $comments =
@@ -45,6 +49,12 @@ class PaymentCaptureReversed extends WebhookHandlerContract
         zen_update_orders_history($oID, $capture_admin_message);
 
         // @TODO - NOTIFY MERCHANT VIA EMAIL
+        // @todo could use this logic from paypalr.php module:
+//        $GLOBALS['paypalr']->sendAlertEmail(
+//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
+//        );
+//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
     }
 }
 

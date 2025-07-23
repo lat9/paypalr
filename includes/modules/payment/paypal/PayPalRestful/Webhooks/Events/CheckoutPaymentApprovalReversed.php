@@ -26,6 +26,11 @@ class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
 
         $this->log->write('CHECKOUT.PAYMENT-APPROVAL.REVERSED - action() triggered');
 
+        // Loading this to load all language file dependencies.
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
+
+
         // Refer to Handle uncaptured payments for what to do when this event occurs
         // https://developer.paypal.com/docs/checkout/apm/reference/handle-uncaptured-payments/
 
@@ -59,6 +64,13 @@ class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
         zen_update_orders_history($oID, $admin_message);
 
         // @TODO - NOTIFY MERCHANT VIA EMAIL
+        // @todo could use this logic from paypalr.php module:
+//        $GLOBALS['paypalr']->sendAlertEmail(
+//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
+//        );
+//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+
     }
 }
 

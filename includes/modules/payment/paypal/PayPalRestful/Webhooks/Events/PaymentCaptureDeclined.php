@@ -26,6 +26,10 @@ class PaymentCaptureDeclined extends WebhookHandlerContract
 
         $this->log->write('PAYMENT.CAPTURE.DECLINED - action() triggered');
 
+        // Loading this to load all language file dependencies.
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
+
         $summary = $this->data['summary'];
         $txnID = $this->data['resource']['id'];
 
@@ -42,6 +46,14 @@ class PaymentCaptureDeclined extends WebhookHandlerContract
         $capture_status = 1;
         zen_update_orders_history($oID, $comments, null, $capture_status, 0);
         zen_update_orders_history($oID, $capture_admin_message);
+
+        // @TODO - NOTIFY MERCHANT VIA EMAIL
+        // @todo could use this logic from paypalr.php module:
+//        $GLOBALS['paypalr']->sendAlertEmail(
+//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
+//        );
+//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
     }
 }
 

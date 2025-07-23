@@ -26,6 +26,10 @@ class PaymentCaptureCompleted extends WebhookHandlerContract
 
         $this->log->write('PAYMENT.CAPTURE.COMPLETED - action() triggered');
 
+        // Loading this to load all language file dependencies.
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
+
         // A payment capture can be triggered via the Store's Admin Orders page, or via the PayPal portal.
         // And it could complete "later", out-of-band, and not in-real-time.
         // Therefore we use the webhook to listen for when PayPal completes the capture, so we can update the order accordingly, if needed.
@@ -33,6 +37,7 @@ class PaymentCaptureCompleted extends WebhookHandlerContract
         // Ensure order's status is updated to reflect that payment has been captured
         // - look up order
         // - ensure it was paid via paypalr
+        // - CHECK WHETHER WAS ALREADY CAPTURED, so we're not duplicating status records and notifier calls
         // - update payment status, including a note with any safe-to-share info from webhook
 
         $summary = $this->data['summary'];
@@ -41,6 +46,9 @@ class PaymentCaptureCompleted extends WebhookHandlerContract
         $oID = $this->data['resource']['supplementary_data']['related_ids']['order_id'] ?? null;
 
         // @TODO - verify $oID is found in db, and if not, then lookup via $this->data['resource']['custom_id'] or ['invoice_id']
+
+
+        // @TODO check status: was it already captured previously (according to our internal records)? if yes, abort to prevent duplications
 
         $amount = $this->data['resource']['amount']['value'];
         $comments =
@@ -57,6 +65,22 @@ class PaymentCaptureCompleted extends WebhookHandlerContract
         }
         zen_update_orders_history($oID, $comments, null, $capture_status, 0);
         zen_update_orders_history($oID, $capture_admin_message);
+
+        // @TODO - NOTIFY MERCHANT VIA EMAIL
+        // @todo could use this logic from paypalr.php module:
+//        $GLOBALS['paypalr']->sendAlertEmail(
+//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
+//        );
+//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+
+
+        // @TODO - is this risking duplication if the order was already captured in-real-time?
+        // If funds have been captured, fire a notification so that sites that
+        // manage payments are aware of the incoming funds.
+        //
+        global $zco_notifier;
+        $zco_notifier->notify('NOTIFY_PAYPALR_FUNDS_CAPTURED', ['webhook' => $this->data]);
     }
 }
 

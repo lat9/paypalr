@@ -28,6 +28,9 @@ class PaymentAuthorizationVoided extends WebhookHandlerContract
 
         // Add an order-status record indicating that the prior auth has expired or been voided.
 
+        // Loading this to load all language file dependencies.
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
 
         $summary = $this->data['summary'];
         $txnID = $this->data['resource']['id'];
@@ -46,6 +49,13 @@ class PaymentAuthorizationVoided extends WebhookHandlerContract
 
         zen_update_orders_history($oID, $comments, null, $voided_status, 0);
 
+        // @TODO - NOTIFY MERCHANT VIA EMAIL
+        // @todo could use this logic from paypalr.php module:
+//        $GLOBALS['paypalr']->sendAlertEmail(
+//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
+//        );
+//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
     }
 }
 
