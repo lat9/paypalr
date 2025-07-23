@@ -187,7 +187,7 @@ class paypalr extends base
      */
     public function __construct()
     {
-        global $order, $messageStack;
+        global $order, $messageStack, $loaderPrefix;
 
         $this->code = 'paypalr';
 
@@ -205,6 +205,7 @@ class paypalr extends base
             return false;
         }
 
+        // @TODO - "Retired" check should accommodate 'webhook' mode too, because we do want to still respond to webhooks when in Retired mode.
         $this->enabled = (MODULE_PAYMENT_PAYPALR_STATUS === 'True' || (IS_ADMIN_FLAG === true && MODULE_PAYMENT_PAYPALR_STATUS === 'Retired'));
         if ($this->enabled === false) {
             return;
@@ -252,8 +253,9 @@ class paypalr extends base
             //
             // No observer?  No payment via this module and it's auto-disabled.
             //
-            // The one exception to the above 'rule' is any load from the ipn_main_handler.  The
-            // paypal_ipn.core.php (for whatever reason) doesn't load the auto-loaded observers,
+            // The two exception to the above 'rule' is any load from the ipn_main_handler or a webhook listener.
+            // Webhook classes don't need the Observer, so we just return.
+            // The paypal_ipn.core.php (for whatever reason) doesn't load the auto-loaded observers,
             // so the paypalr one won't be there.  If that's the case, just indicate that the
             // payment module is disabled and return.
             //
@@ -261,8 +263,7 @@ class paypalr extends base
             if (!isset($zcObserverPaypalrestful)) {
                 $this->enabled = false;
 
-                global $loaderPrefix;
-                if (($loaderPrefix ?? '') === 'paypal_ipn') {
+                if (in_array($loaderPrefix ?? '', ['paypal_ipn', 'webhook'], true)) {
                     return;
                 }
                 $this->setConfigurationDisabled(MODULE_PAYMENT_PAYPALR_ALERT_MISSING_OBSERVER);
@@ -291,10 +292,10 @@ class paypalr extends base
         // -----
         // Validate the configuration, e.g. that the supplied Client ID/Secret are
         // valid for the active PayPal server. If the configuration's invalid (admin/storefront)
-        // or if we're processing for the admin, all finished here!
+        // or if we're processing for the admin or a webhook, all finished here!
         //
         $this->enabled = $this->validateConfiguration($curl_installed);
-        if ($this->enabled === false || IS_ADMIN_FLAG === true) {
+        if ($this->enabled === false || IS_ADMIN_FLAG === true || $loaderPrefix === 'webhook') {
             return;
         }
 
