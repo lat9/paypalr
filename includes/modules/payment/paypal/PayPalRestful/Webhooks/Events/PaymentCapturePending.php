@@ -1,0 +1,119 @@
+<?php
+/**
+ * PayPal REST API Webhooks
+ *
+ * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
+ * @version $Id: DrByte June 2025 $
+ *
+ * Last updated: v1.2.0
+ */
+
+namespace PayPalRestful\Webhooks\Events;
+
+use PayPalRestful\Webhooks\WebhookHandlerContract;
+
+class PaymentCapturePending extends WebhookHandlerContract
+{
+    protected array $eventsHandled = [
+        'PAYMENT.CAPTURE.PENDING',
+    ];
+
+    public function action(): void
+    {
+        // The state of a payment capture changes to pending
+        // https://developer.paypal.com/docs/api/payments/v2/#authorizations_get - Show details for authorized payment with response `status` of `pending`.
+
+        $this->log->write('PAYMENT.CAPTURE.PENDING - action() triggered');
+
+        // Loading this to load all language file dependencies.
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
+
+        // add an order-status record saying that PayPal has marked the capture as "pending" (which means they're waiting for the payment to be approved)
+
+
+        $summary = $this->data['summary'];
+        $txnID = $this->data['resource']['id'];
+
+        // @TODO probably have to lookup via auth for parent_payment instead
+        $oID = $this->data['resource']['supplementary_data']['related_ids']['order_id'] ?? null;
+
+        // @TODO - verify $oID is found in db, and if not, then lookup via $this->data['resource']['custom_id'] or ['invoice_id']
+
+        $amount = $this->data['resource']['amount']['value'];
+        $comments =
+            "Notice: CAPTURE PENDING. Trans ID: $txnID \n" .
+            "Amount: $amount\n$summary\n";
+
+        zen_update_orders_history($oID, $comments, null, -1, 0);
+
+        // @TODO - NOTIFY MERCHANT VIA EMAIL
+        // @todo could use this logic from paypalr.php module:
+//        $GLOBALS['paypalr']->sendAlertEmail(
+//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
+//        );
+//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+    }
+}
+
+/*
+{
+  "id": "WH-9Y180613C5171350R-3A568107UP261041K",
+  "create_time": "2018-08-15T20:03:06.086Z",
+  "resource_type": "capture",
+  "event_type": "PAYMENT.CAPTURE.PENDING",
+  "summary": "Payment pending for $ 2.51 USD",
+  "resource": {
+    "amount": {
+      "currency_code": "USD",
+      "value": "2.51"
+    },
+    "seller_protection": {
+      "status": "NOT_ELIGIBLE"
+    },
+    "update_time": "2018-08-15T20:02:40Z",
+    "create_time": "2018-08-15T20:02:40Z",
+    "final_capture": true,
+    "links": [
+      {
+        "href": "https://api.paypal.com/v2/payments/captures/02T21492PP3782704",
+        "rel": "self",
+        "method": "GET"
+      },
+      {
+        "href": "https://api.paypal.com/v2/payments/captures/02T21492PP3782704/refund",
+        "rel": "refund",
+        "method": "POST"
+      },
+      {
+        "href": "https://api.paypal.com/v2/checkout/orders/8PR65097T8571330M",
+        "rel": "up",
+        "method": "GET"
+      }
+    ],
+    "id": "02T21492PP3782704",
+    "status_details": {
+      "reason": "UNILATERAL"
+    },
+    "status": "PENDING"
+  },
+  "links": [
+    {
+      "href": "https://api.paypal.com/v1/notifications/webhooks-events/WH-9Y180613C5171350R-3A568107UP261041K",
+      "rel": "self",
+      "method": "GET",
+      "encType": "application/json"
+    },
+    {
+      "href": "https://api.paypal.com/v1/notifications/webhooks-events/WH-9Y180613C5171350R-3A568107UP261041K/resend",
+      "rel": "resend",
+      "method": "POST",
+      "encType": "application/json"
+    }
+  ],
+  "event_version": "1.0",
+  "resource_version": "2.0"
+}
+ */
