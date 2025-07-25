@@ -26,6 +26,7 @@ abstract class WebhookHandlerContract
     protected Logger $log;
 
     protected PayPalRestfulApi $ppr;
+    protected \paypalr $paymentModule;
 
 
     public function __construct(WebhookObject $webhook)
@@ -39,6 +40,15 @@ abstract class WebhookHandlerContract
 
     abstract public function action(): void;
 
+    /**
+     * Instantiate paypalr payment module, including its language string dependencies.
+     */
+    protected function loadCorePaymentModuleAndLanguageStrings(): void
+    {
+        require DIR_WS_CLASSES . 'payment.php';
+        $payment_modules = new \payment ('paypalr');
+        $this->paymentModule = $GLOBALS[$payment_modules->selected_module];
+    }
 
     /**
      * Call this before making API calls if needed by the webhook

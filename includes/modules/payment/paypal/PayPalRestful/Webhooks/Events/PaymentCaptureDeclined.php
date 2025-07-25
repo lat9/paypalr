@@ -11,6 +11,7 @@
 
 namespace PayPalRestful\Webhooks\Events;
 
+use PayPalRestful\Admin\GetPayPalOrderTransactions;
 use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class PaymentCaptureDeclined extends WebhookHandlerContract
@@ -26,34 +27,41 @@ class PaymentCaptureDeclined extends WebhookHandlerContract
 
         $this->log->write('PAYMENT.CAPTURE.DECLINED - action() triggered');
 
-        // Loading this to load all language file dependencies.
-        require DIR_WS_CLASSES . 'payment.php';
-        $payment_modules = new \payment ('paypalr');
+        // Instantiate paypalr module to load its language strings for status messages
+        $this->loadCorePaymentModuleAndLanguageStrings();
 
+        $txnID = $this->data['resource']['supplementary_data']['related_ids']['order_id'] ?? null;
+        $oID = GetPayPalOrderTransactions::getOrderIdFromPayPalTxnId($txnID);
+
+        if (empty($oID)) {
+            $this->log->write("\n\n---\nNOTICE: Order ID lookup returned no results.\n\n");
+            return;
+        }
+
+        // Sync our database with all updates from PayPal
+        $this->getApiAndCredentials();
+        $ppr_txns = new GetPayPalOrderTransactions($this->paymentModule->code, $this->paymentModule->getCurrentVersion(), $oID, $this->ppr);
+        $ppr_txns->syncPaypalTxns();
+
+        // Update order-status records noting what's happened
         $summary = $this->data['summary'];
-        $txnID = $this->data['resource']['id'];
-
-        $oID = $this->data['resource']['supplementary_data']['related_ids']['order_id'] ?? null;
-
-        // @TODO - verify $oID is found in db, and if not, then lookup via $this->data['resource']['custom_id'] or ['invoice_id']
-
         $amount = $this->data['resource']['amount']['value'];
         $comments =
             "Notice: CAPTURE DECLINED. Trans ID: $txnID \n" .
             "Amount: $amount\n$summary\n";
 
-        $capture_admin_message = MODULE_PAYMENT_PAYPALR_CAPTURE_ERROR;
-        $capture_status = 1;
-        zen_update_orders_history($oID, $comments, null, $capture_status, 0);
-        zen_update_orders_history($oID, $capture_admin_message);
+        $admin_message = MODULE_PAYMENT_PAYPALR_CAPTURE_ERROR;
+        $status = (int)MODULE_PAYMENT_PAYPALR_VOIDED_STATUS_ID;
+        $status = ($status > 0) ? $status : 1;
 
-        // @TODO - NOTIFY MERCHANT VIA EMAIL
-        // @todo could use this logic from paypalr.php module:
-//        $GLOBALS['paypalr']->sendAlertEmail(
-//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
-//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
-//        );
-//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+        // Save update without notifying customer
+        zen_update_orders_history($oID, $comments, 'webhook', $status, 0);
+
+        // Notify merchant via email
+        zen_update_orders_history($oID, $admin_message, 'webhook', -1, -2);
+        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $oID, $this->data['resource']['payment_status'])
+        );
     }
 }
 

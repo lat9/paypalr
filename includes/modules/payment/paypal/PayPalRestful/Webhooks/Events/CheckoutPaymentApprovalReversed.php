@@ -11,6 +11,8 @@
 
 namespace PayPalRestful\Webhooks\Events;
 
+use PayPalRestful\Admin\GetPayPalOrderTransactions;
+use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
@@ -26,10 +28,6 @@ class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
 
         $this->log->write('CHECKOUT.PAYMENT-APPROVAL.REVERSED - action() triggered');
 
-        // Loading this to load all language file dependencies.
-        require DIR_WS_CLASSES . 'payment.php';
-        $payment_modules = new \payment ('paypalr');
-
 
         // Refer to Handle uncaptured payments for what to do when this event occurs
         // https://developer.paypal.com/docs/checkout/apm/reference/handle-uncaptured-payments/
@@ -42,35 +40,38 @@ class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
         // Send a notification to your buyer that provides them with possible next steps, like contacting customer support. And cancel/downgrade the order to unpaid status.
 
 
-        // @TODO - lookup order ID and add an order-status record noting what's happened ...
-        // @TODO - AND NOTIFY THE CUSTOMER
-        // @TODO - also downgrade the order-status to payment-pending
-        // @TODO - also would be good to notify the merchant by email.
+        // Instantiate paypalr module to load its language strings for status messages
+        $this->loadCorePaymentModuleAndLanguageStrings();
 
+        $oID = GetPayPalOrderTransactions::getOrderIdFromPayPalTxnId($this->data['resource']['order_id'] ?? null);
+
+        if (empty($oID)) {
+            $this->log->write("\n\n---\nNOTICE: Order ID lookup returned no results.\n\n");
+            return;
+        }
+
+        // Sync our database with all updates from PayPal
+        $this->getApiAndCredentials();
+        $ppr_txns = new GetPayPalOrderTransactions($this->paymentModule->code, $this->paymentModule->getCurrentVersion(), $oID, $this->ppr);
+        $ppr_txns->syncPaypalTxns();
+
+        // Update order-status records noting what's happened
         $summary = $this->data['summary'];
-
-        $oID = $this->data['resource']['order_id'] ?? null;
-        // @TODO - verify $oID is found in db, and if not, then lookup via $this->data['resource']['custom_id'] or ['invoice_id']
-
-        $comments =
-            "Notice: PAYMENT REVERSAL. Order ID: $oID \n" .
-            "$summary\n";
-
+        $comments = "Notice: PAYMENT REVERSAL. Order ID: $oID \n$summary\n";
         $admin_message = MODULE_PAYMENT_PAYPALR_CAPTURE_ERROR;
-        $status = (int)MODULE_PAYMENT_PAYPALR_REFUNDED_STATUS_ID;
+        // downgrade order status to payment-pending
+        $status = (int)MODULE_PAYMENT_PAYPALR_VOIDED_STATUS_ID;
         $status = ($status > 0) ? $status : 1;
+        // Save update and notify customer
+        zen_update_orders_history($oID, $comments, 'webhook', $status, 1);
 
-        zen_update_orders_history($oID, $comments, null, $status, 1);
-        zen_update_orders_history($oID, $admin_message);
+        // Notify merchant via email
+        zen_update_orders_history($oID, $admin_message, 'webhook', -1, -2);
+        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $oID));
 
-        // @TODO - NOTIFY MERCHANT VIA EMAIL
-        // @todo could use this logic from paypalr.php module:
-//        $GLOBALS['paypalr']->sendAlertEmail(
-//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
-//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
-//        );
-//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
-
+        // Alert any listeners
+        global $zco_notifier;
+        $zco_notifier->notify('NOTIFY_PAYPALR_ADMIN_FUNDS_IN_OUT', ['webhook' => $this->data]);
     }
 }
 

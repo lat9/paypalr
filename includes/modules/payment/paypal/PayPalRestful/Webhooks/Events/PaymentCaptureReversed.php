@@ -11,6 +11,7 @@
 
 namespace PayPalRestful\Webhooks\Events;
 
+use PayPalRestful\Admin\GetPayPalOrderTransactions;
 use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class PaymentCaptureReversed extends WebhookHandlerContract
@@ -23,38 +24,44 @@ class PaymentCaptureReversed extends WebhookHandlerContract
     {
         // PayPal reverses a payment capture (not the merchant)
         // https://developer.paypal.com/docs/api/payments/v2/#captures_refund
+        // Add an order-status record indicating that PayPal reversed the payment capture (refunded the payment), unbeknownst to the merchant
 
         $this->log->write('PAYMENT.CAPTURE.REVERSED - action() triggered');
 
-        // Loading this to load all language file dependencies.
-        require DIR_WS_CLASSES . 'payment.php';
-        $payment_modules = new \payment ('paypalr');
+        // Instantiate paypalr module to load its language strings for status messages
+        $this->loadCorePaymentModuleAndLanguageStrings();
 
-        // Add an order-status record indicating that PayPal reversed the payment capture (refunded the payment), unbeknownst to the merchant
+        $txnID = $this->data['resource']['id'] ?? null;
+        $oID = GetPayPalOrderTransactions::getOrderIdFromPayPalTxnId($txnID);
 
+        if (empty($oID)) {
+            $this->log->write("\n\n---\nNOTICE: Order ID lookup returned no results.\n\n");
+            return;
+        }
+
+        // Sync our database with all updates from PayPal
+        $this->getApiAndCredentials();
+        $ppr_txns = new GetPayPalOrderTransactions($this->paymentModule->code, $this->paymentModule->getCurrentVersion(), $oID, $this->ppr);
+        $ppr_txns->syncPaypalTxns();
+
+        // Update order-status records noting what's happened
         $summary = $this->data['summary'];
-        $txnID = $this->data['resource']['id'];
-
-        $oID = $txnID; // @TODO - lookup via $txnID
-
         $amount = $this->data['resource']['amount']['value'];
         $comments =
             "Notice: REFUNDED/REVERSED. Trans ID: $txnID \n" .
             "Amount: $amount\n$summary\n";
-        $capture_admin_message = sprintf(MODULE_PAYMENT_PAYPALR_REFUND_COMPLETE, $amount);
-        $refund_status = (int)MODULE_PAYMENT_PAYPALR_REFUNDED_STATUS_ID;
-        $refund_status = ($refund_status > 0) ? $refund_status : 1;
+        $admin_message = $this->data['summary'] . "\n" . $this->data['note_to_payer'];
+        $status = (int)MODULE_PAYMENT_PAYPALR_REFUNDED_STATUS_ID;
+        $status = ($status > 0) ? $status : 1;
 
-        zen_update_orders_history($oID, $comments, null, $refund_status, 1);
-        zen_update_orders_history($oID, $capture_admin_message);
+        // Save update and notify customer
+        zen_update_orders_history($oID, $comments, 'webhook', $status, 1);
 
-        // @TODO - NOTIFY MERCHANT VIA EMAIL
-        // @todo could use this logic from paypalr.php module:
-//        $GLOBALS['paypalr']->sendAlertEmail(
-//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
-//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
-//        );
-//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+        // Notify merchant via email
+        zen_update_orders_history($oID, $admin_message, 'webhook', -1, -2);
+        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $oID, $this->data['resource']['payment_status'])
+        );
     }
 }
 

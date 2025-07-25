@@ -11,6 +11,7 @@
 
 namespace PayPalRestful\Webhooks\Events;
 
+use PayPalRestful\Admin\GetPayPalOrderTransactions;
 use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class PaymentCapturePending extends WebhookHandlerContract
@@ -23,38 +24,40 @@ class PaymentCapturePending extends WebhookHandlerContract
     {
         // The state of a payment capture changes to pending
         // https://developer.paypal.com/docs/api/payments/v2/#authorizations_get - Show details for authorized payment with response `status` of `pending`.
+        // Add an order-status record saying that PayPal has marked the capture as "pending" (which means they're waiting for the payment to be approved)
 
         $this->log->write('PAYMENT.CAPTURE.PENDING - action() triggered');
 
-        // Loading this to load all language file dependencies.
-        require DIR_WS_CLASSES . 'payment.php';
-        $payment_modules = new \payment ('paypalr');
+        // Instantiate paypalr module to load its language strings for status messages
+        $this->loadCorePaymentModuleAndLanguageStrings();
 
-        // add an order-status record saying that PayPal has marked the capture as "pending" (which means they're waiting for the payment to be approved)
+        $txnID = $this->data['resource']['id'] ?? null;
+        $oID = GetPayPalOrderTransactions::getOrderIdFromPayPalTxnId($txnID);
 
+        if (empty($oID)) {
+            $this->log->write("\n\n---\nNOTICE: Order ID lookup returned no results.\n\n");
+            return;
+        }
 
+        // Sync our database with all updates from PayPal
+        $this->getApiAndCredentials();
+        $ppr_txns = new GetPayPalOrderTransactions($this->paymentModule->code, $this->paymentModule->getCurrentVersion(), $oID, $this->ppr);
+        $ppr_txns->syncPaypalTxns();
+
+        // Update order-status records noting what's happened
         $summary = $this->data['summary'];
-        $txnID = $this->data['resource']['id'];
-
-        // @TODO probably have to lookup via auth for parent_payment instead
-        $oID = $this->data['resource']['supplementary_data']['related_ids']['order_id'] ?? null;
-
-        // @TODO - verify $oID is found in db, and if not, then lookup via $this->data['resource']['custom_id'] or ['invoice_id']
-
         $amount = $this->data['resource']['amount']['value'];
         $comments =
             "Notice: CAPTURE PENDING. Trans ID: $txnID \n" .
             "Amount: $amount\n$summary\n";
 
-        zen_update_orders_history($oID, $comments, null, -1, 0);
+        // Save update without notifying customer, and without updating actual status
+        zen_update_orders_history($oID, $comments, 'webhook', -1, 0);
 
-        // @TODO - NOTIFY MERCHANT VIA EMAIL
-        // @todo could use this logic from paypalr.php module:
-//        $GLOBALS['paypalr']->sendAlertEmail(
-//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
-//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
-//        );
-//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+        // Notify merchant via email
+        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
+            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $oID, $this->data['resource']['payment_status'])
+        );
     }
 }
 

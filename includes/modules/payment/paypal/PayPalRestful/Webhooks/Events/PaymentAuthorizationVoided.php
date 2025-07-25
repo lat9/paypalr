@@ -11,6 +11,7 @@
 
 namespace PayPalRestful\Webhooks\Events;
 
+use PayPalRestful\Admin\GetPayPalOrderTransactions;
 use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class PaymentAuthorizationVoided extends WebhookHandlerContract
@@ -21,41 +22,47 @@ class PaymentAuthorizationVoided extends WebhookHandlerContract
 
     public function action(): void
     {
-        // A payment authorization is voided either due to authorization reaching its 30 day validity period or authorization was manually voided using the Void Authorized Payment API.
-        // https://developer.paypal.com/docs/api/payments/v2/#authorizations_get - Show details for authorized payment with response `status` of `voided`.
+        // A payment authorization is voided either due to authorization
+        // reaching its 30-day validity period or authorization was
+        // manually voided using the Void Authorized Payment API.
+        // https://developer.paypal.com/docs/api/payments/v2/#authorizations_get
 
         $this->log->write('PAYMENT.AUTHORIZATION.VOIDED - action() triggered');
 
-        // Add an order-status record indicating that the prior auth has expired or been voided.
+        // ACTION: Add an order-status record indicating that the prior auth has expired or been voided.
 
-        // Loading this to load all language file dependencies.
-        require DIR_WS_CLASSES . 'payment.php';
-        $payment_modules = new \payment ('paypalr');
 
+        // Instantiate paypalr module to load its language strings for status messages
+        $this->loadCorePaymentModuleAndLanguageStrings();
+
+        $txnID = $this->data['resource']['id'] ?? null;
+        $oID = GetPayPalOrderTransactions::getOrderIdFromPayPalTxnId($txnID);
+
+        if (empty($oID)) {
+            $this->log->write("\n\n---\nNOTICE: Order ID lookup returned no results.\n\n");
+            return;
+        }
+
+        // Sync our database with all updates from PayPal
+        $this->getApiAndCredentials();
+        $ppr_txns = new GetPayPalOrderTransactions($this->paymentModule->code, $this->paymentModule->getCurrentVersion(), $oID, $this->ppr);
+        $ppr_txns->syncPaypalTxns();
+
+        // Update order-status records noting what's happened
         $summary = $this->data['summary'];
-        $txnID = $this->data['resource']['id'];
-
-        $oID = $this->data['resource']['supplementary_data']['related_ids']['order_id'] ?? null;
-
-        // @TODO - lookup $oID differently
-
         $amount = $this->data['resource']['amount']['value'];
         $comments =
             "Notice: VOIDED. Trans ID: $txnID \n" .
             "Amount: $amount\n$summary\n";
 
-        $voided_status = (int)MODULE_PAYMENT_PAYPALR_VOIDED_STATUS_ID;
-        $voided_status = ($voided_status > 0) ? $voided_status : 1;
+        $status = (int)MODULE_PAYMENT_PAYPALR_VOIDED_STATUS_ID;
+        $status = ($status > 0) ? $status : 1;
 
-        zen_update_orders_history($oID, $comments, null, $voided_status, 0);
+        // Save update without notifying customer
+        zen_update_orders_history($oID, $comments, 'webhook', $status, 0);
 
-        // @TODO - NOTIFY MERCHANT VIA EMAIL
-        // @todo could use this logic from paypalr.php module:
-//        $GLOBALS['paypalr']->sendAlertEmail(
-//            MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
-//            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $this->orderInfo['orders_id'], $this->orderInfo['paypal_payment_status'])
-//        );
-//     or   $GLOBALS['paypalr']->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $zf_order_id));
+        // Notify merchant via email
+        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $oID));
     }
 }
 
