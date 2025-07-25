@@ -131,6 +131,8 @@ class PayPalRestfulApi extends ErrorInfo
     //
     public function __construct(string $endpoint_type, string $client_id, string $client_secret)
     {
+        parent::__construct();
+
         $this->endpoint = ($endpoint_type === 'live') ? self::ENDPOINT_PRODUCTION : self::ENDPOINT_SANDBOX;
         $this->clientId = $client_id;
         $this->clientSecret = $client_secret;
@@ -412,6 +414,7 @@ class PayPalRestfulApi extends ErrorInfo
             'Content-Type: application/json',
             "Authorization: Bearer $oauth2_token",
             'Prefer: return=representation',
+            'PayPal-Partner-Attribution-Id: ZenCart_SP_PPCP'
         ];
 
         // -----

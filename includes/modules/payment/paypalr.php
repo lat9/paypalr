@@ -432,6 +432,14 @@ class paypalr extends base
                             ('Trigger 3D Secure on <b>Every</b> Txn?', 'MODULE_PAYMENT_PAYPALR_SCA_ALWAYS', 'false', 'Choose <var>true</var> to trigger 3D Secure for <b>every</b> transaction, regardless of SCA requirements.<br><br><b>Default</b>: <var>false</var>', 6, 0, 'zen_cfg_select_option([\'true\', \'false\'], ', NULL, now())"
                     );
                     break;
+                case version_compare(MODULE_PAYMENT_PAYPALR_VERSION, '1.2.0', '<'):
+                    $db->Execute(
+                        "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
+                            (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
+                         VALUES
+                            ('Store (Sub-Brand) Identifier at PayPal', 'MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR', '', 'On customer credit card statements, your company name will show as <code>PAYPAL*(yourname)*(your-sub-brand-name)</code> (max 22 letters for (yourname)*(your-sub-brand-name)). You can add the sub-brand-name here if you want to differentiate purchases from this store vs any other PayPal sales you make.', 6, 0, NULL, NULL, now())"
+                    );
+                    break;
                 default:
                     break;
             }
@@ -1941,7 +1949,8 @@ class paypalr extends base
      * identical order-contents within the same session have a unique GUID.
      *
      * Add a customer-visible order-status-history record identifying the
-     * associated transaction ID, payment method, timestamp, status and amount.
+     * associated transaction ID, payment method, timestamp, status, amount,
+     * and payment-source, buyer email and addresses, if not blank.
      */
     public function after_process()
     {
@@ -1958,7 +1967,15 @@ class paypalr extends base
             sprintf(MODULE_PAYMENT_PAYPALR_TRANSACTION_TYPE, $payment_info['payment_type']) . "\n" .
             $timestamp .
             MODULE_PAYMENT_PAYPALR_TRANSACTION_PAYMENT_STATUS . $this->orderInfo['payment_status'] . "\n" .
-            MODULE_PAYMENT_PAYPALR_TRANSACTION_AMOUNT . $payment_info['amount'];
+            MODULE_PAYMENT_PAYPALR_TRANSACTION_AMOUNT . $payment_info['amount'] . "\n";
+
+        $payment_type = $this->orderInfo['payment_info']['payment_type'];
+        $message .= MODULE_PAYMENT_PAYPALR_FUNDING_SOURCE . $payment_type . "\n";
+
+        if (!empty($this->orderInfo['payment_source'][$payment_type]['email_address'])) {
+            $message .= MODULE_PAYMENT_PAYPALR_BUYER_EMAIL . $this->orderInfo['payment_source'][$payment_type]['email_address'] . "\n";
+        }
+
         zen_update_orders_history($this->orderInfo['orders_id'], $message, null, -1, 0);
 
         // -----
@@ -2111,6 +2128,8 @@ class paypalr extends base
 
                 ('Store (Brand) Name at PayPal', 'MODULE_PAYMENT_PAYPALR_BRANDNAME', '', 'The name of your store as it should appear on the PayPal login page. If blank, your store name will be used.', 6, 0, NULL, NULL, now()),
 
+                ('Store (Sub-Brand) Identifier at PayPal', 'MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR', '', 'On customer credit card statements, your company name will show as <code>PAYPAL*(yourname)*(your-sub-brand-name)</code> (max 22 letters for (yourname)*(your-sub-brand-name)). You can add the sub-brand-name here if you want to differentiate purchases from this store vs any other PayPal sales you make.', 6, 0, NULL, NULL, now()),
+
                 ('Payment Action', 'MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE', 'Final Sale', 'How do you want to obtain payment?<br><b>Default: Final Sale</b>', 6, 0, 'zen_cfg_select_option([\'Auth Only\', \'Final Sale\'], ', NULL,  now()),
 
                 ('Transaction Currency', 'MODULE_PAYMENT_PAYPALR_CURRENCY', 'Selected Currency', 'In which currency should the order be sent to PayPal?<br>NOTE: If an unsupported currency is sent to PayPal, it will be auto-converted to the <em>Fall-back Currency</em>.<br><b>Default: Selected Currency</b>', 6, 0, 'zen_cfg_select_option([\'Selected Currency\', $currencies_list], ', NULL, now()),
@@ -2130,6 +2149,7 @@ class paypalr extends base
 
         // -----
         // Make any modifications to the 'paypal' table, if not already done.
+
         //
         // 1. Adding an order's re-authorize time limit, so it's always available.
         //
@@ -2231,6 +2251,7 @@ class paypalr extends base
             'MODULE_PAYMENT_PAYPALR_CURRENCY',
             'MODULE_PAYMENT_PAYPALR_CURRENCY_FALLBACK',
             'MODULE_PAYMENT_PAYPALR_BRANDNAME',
+            'MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR',
             'MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE',
             'MODULE_PAYMENT_PAYPALR_SCA_ALWAYS',
             'MODULE_PAYMENT_PAYPALR_ACCEPT_CARDS',

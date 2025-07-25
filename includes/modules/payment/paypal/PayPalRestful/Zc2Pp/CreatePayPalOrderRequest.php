@@ -69,6 +69,8 @@ class CreatePayPalOrderRequest extends ErrorInfo
     //
     public function __construct(string $ppr_type, \order $order, array $cc_info, array $order_info, array $ot_diffs)
     {
+        parent::__construct();
+
         $this->log = new Logger();
 
         global $currencies;
@@ -102,6 +104,12 @@ class CreatePayPalOrderRequest extends ErrorInfo
         ];
         $this->request['purchase_units'][0]['items'] = $this->getItems($order->products);
         $this->request['purchase_units'][0]['amount'] = $this->getOrderAmountAndBreakdown($order, $order_info, $ot_diffs);
+
+        // -----
+        // Set soft-descriptor override if defined. Else it will use the branding details already in the PayPal account.
+        if (defined('MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR') && MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR !== '') {
+            $this->request['purchase_units'][0]['soft_descriptor'] = substr(MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR, 0, 22);
+        }
 
         // -----
         // The 'shipping' element is included *only if* the order's got one or more
