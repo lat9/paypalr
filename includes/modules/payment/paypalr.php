@@ -2303,4 +2303,9 @@ class paypalr extends base
             );
         }
     }
+
+    public function getCurrentVersion(): string
+    {
+        return self::CURRENT_VERSION;
+    }
 }
