@@ -66,7 +66,7 @@ class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
         zen_update_orders_history($oID, $comments, 'webhook', $status, 1);
 
         // Notify merchant via email
-        zen_update_orders_history($oID, $admin_message, 'webhook', -1, -2);
+        zen_update_orders_history($oID, $admin_message . "\n" . $comments, 'webhook', -1, -2);
         $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, sprintf(MODULE_PAYMENT_PAYPALR_ALERT_EXTERNAL_TXNS, $oID));
 
         // Alert any listeners

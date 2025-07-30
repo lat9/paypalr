@@ -59,8 +59,8 @@ class PaymentCaptureDeclined extends WebhookHandlerContract
 
         // Notify merchant via email
         zen_update_orders_history($oID, $admin_message, 'webhook', -1, -2);
-        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN,
-            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $oID, $this->data['resource']['payment_status'])
+        $this->paymentModule->sendAlertEmail(MODULE_PAYMENT_PAYPALR_ALERT_SUBJECT_ORDER_ATTN, $comments . "\n" .
+            sprintf(MODULE_PAYMENT_PAYPALR_ALERT_ORDER_CREATION, $oID, $this->data['resource']['status'])
         );
     }
 }
