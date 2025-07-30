@@ -88,7 +88,7 @@ class GetPayPalOrderTransactions
             $this->messages->add(MODULE_PAYMENT_PAYPALR_EXTERNAL_ADDITION, 'warning');
         }
 
-        if ($this->messages->size !== 0) {
+        if (!\property_exists($this->messages, 'size') || $this->messages->size !== 0) {
             $this->getPayPalDatabaseTransactionsForOrder();
         }
     }
