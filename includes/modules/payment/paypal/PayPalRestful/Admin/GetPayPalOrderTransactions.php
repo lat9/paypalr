@@ -76,6 +76,10 @@ class GetPayPalOrderTransactions
         return (string)$main_txn[0]['invoice'];
     }
 
+    /**
+     * Update paypal db table with latest updates for this order
+     * by retrieving entire order history from PayPal
+     */
     public function syncPaypalTxns()
     {
         $this->getPayPalUpdates();
@@ -84,7 +88,7 @@ class GetPayPalOrderTransactions
             $this->messages->add(MODULE_PAYMENT_PAYPALR_EXTERNAL_ADDITION, 'warning');
         }
 
-        if ($this->messages->size !== 0) {
+        if (!\property_exists($this->messages, 'size') || $this->messages->size !== 0) {
             $this->getPayPalDatabaseTransactionsForOrder();
         }
     }
@@ -400,5 +404,39 @@ class GetPayPalOrderTransactions
                 AND txn_type = 'CREATE'
               LIMIT 1"
         );
+    }
+
+    /**
+     * Lookup Order ID using TxnID -- mostly used by Webhooks
+     * @return int (0 if no match found)
+     */
+    public static function getOrderIdFromPayPalTxnId(string $txn_id): int
+    {
+        global $db;
+
+        // if blank, skip db call
+        if (empty($txn_id)) {
+            return 0;
+        }
+        // sanitize
+        $txn_id = $db->prepare_input($txn_id);
+
+        $results = $db->ExecuteNoCache(
+            "SELECT *
+               FROM " . TABLE_PAYPAL . "
+              WHERE txn_id = '$txn_id'
+              ORDER BY
+                CASE txn_type
+                    WHEN 'CREATE' THEN -1
+                    WHEN 'AUTHORIZE' THEN 0
+                    WHEN 'CAPTURE' THEN 1
+                    ELSE 2
+                END ASC, date_added ASC"
+        );
+
+        if ($results->EOF) {
+            return 0;
+        }
+        return (int)$results->fields['order_id'];
     }
 }

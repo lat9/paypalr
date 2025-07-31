@@ -62,6 +62,19 @@ class PayPalRestfulApi extends ErrorInfo
     public const STATUS_VOIDED = 'VOIDED';
 
     /**
+     * Webhook actions we intend to listen for notifications regarding.
+     */
+    protected array $webhooksToRegister = [
+        'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
+        'PAYMENT.AUTHORIZATION.VOIDED',
+        'PAYMENT.CAPTURE.COMPLETED',
+        'PAYMENT.CAPTURE.DECLINED',
+        'PAYMENT.CAPTURE.PENDING',
+        'PAYMENT.CAPTURE.REFUNDED',
+        'PAYMENT.CAPTURE.REVERSED',
+    ];
+
+    /**
      * Variables associated with interface logging;
      *
      * @log Logger object, logs debug tracing information.
@@ -224,7 +237,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function getAuthorizationStatus(string $paypal_auth_id)
-    { 
+    {
         $this->log->write('==> Start getAuthorizationStatus', true);
         $response = $this->curlGet("v2/payments/authorizations/$paypal_auth_id");
         $this->log->write("==> End getAuthorizationStatus\n", true);
@@ -232,7 +245,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function capturePaymentRemaining(string $paypal_auth_id, string $invoice_id, string $payer_note, bool $final_capture)
-    { 
+    {
         $this->log->write("==> Start capturePaymentRemaining($paypal_auth_id, $invoice_id, $payer_note, $final_capture)", true);
         $parameters = [
             'invoice_id' => $invoice_id,
@@ -245,7 +258,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function capturePaymentAmount(string $paypal_auth_id, string $currency_code, string $value, string $invoice_id, string $payer_note, bool $final_capture)
-    { 
+    {
         $this->log->write("==> Start capturePaymentAmount($paypal_auth_id, $currency_code, $value, $invoice_id, $payer_note, $final_capture)", true);
         $parameters = [
             'amount' => [
@@ -262,7 +275,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function getCaptureStatus(string $paypal_capture_id)
-    { 
+    {
         $this->log->write('==> Start getCaptureStatus', true);
         $response = $this->curlGet("v2/payments/captures/$paypal_capture_id");
         $this->log->write("==> End getCaptureStatus\n", true);
@@ -270,7 +283,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function reAuthorizePayment(string $paypal_auth_id, string $currency_code, string $value)
-    { 
+    {
         $this->log->write("==> Start reAuthorizePayment($paypal_auth_id, $currency_code, $value)", true);
         $amount = [
             'amount' => [
@@ -284,7 +297,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function voidPayment(string $paypal_auth_id)
-    { 
+    {
         $this->log->write("==> Start voidPayment($paypal_auth_id)", true);
         $response = $this->curlPost("v2/payments/authorizations/$paypal_auth_id/void");
         $this->log->write('==> End voidPayment', true);
@@ -292,7 +305,7 @@ class PayPalRestfulApi extends ErrorInfo
     }
 
     public function getTransactionStatus(string $paypal_id)
-    { 
+    {
         $this->log->write("==> Start getTransactionStatus ($paypal_id)", true);
         $parameters = [
             'transaction_id' => $paypal_id,
@@ -332,6 +345,143 @@ class PayPalRestfulApi extends ErrorInfo
         $response = $this->curlGet("v2/payments/refunds/$paypal_refund_id");
         $this->log->write("==> End getRefundStatus\n", true);
         return $response;
+    }
+
+    /**
+     * Submit API call to register the webhooks we are able to listen for
+     */
+    public function subscribeWebhook(): void
+    {
+        if (empty($this->webhooksToRegister)) {
+            return;
+        }
+        $url = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_webhook.php';
+
+        $events = [];
+        foreach($this->webhooksToRegister as $event) {
+            $events[] = ['name' => $event];
+        }
+        $parameters = ['url' => $url, 'event_types' => $events];
+
+        $response = $this->curlPost("v1/notifications/webhooks", $parameters);
+        if ($response === false) {
+            $err = $this->getErrorInfo();
+            if ($err['errNum'] === 400 && $err['name'] === 'WEBHOOK_URL_ALREADY_EXISTS') {
+                // Failed to set, so inquire and store registered ID
+                $response = $this->curlGet("v1/notifications/webhooks/");
+                if ($response === false) {
+                    $this->log->write("ALERT: Webhooks could not be registered. Unable to listen for notifications.", true);
+                    return;
+                }
+                foreach ($response['webhooks'] as $webhook) {
+                    if ($webhook['url'] === $url) {
+                        $webhook_id = $webhook['id'];
+                        break;
+                    }
+                }
+            }
+        } else {
+            $webhook_id = $response['id'];
+        }
+
+        // store the resulting webhook registration ID for later reference
+        global $db;
+        $result = $db->Execute("SELECT configuration_value FROM " . TABLE_CONFIGURATION . " WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS' LIMIT 1");
+        if ($result->EOF) {
+            zen_db_perform(TABLE_CONFIGURATION, [
+                'configuration_key' => 'MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS',
+                'configuration_value' => $webhook_id,
+                'configuration_title' => 'PayPal webhooks subscribe ID',
+                'configuration_description' => 'This module registers certain actions to trigger webhook notifications to this store; here we store the ID of that registration so we can update or delete it later if needed.',
+                'configuration_group_id' => 6,
+                'date_added' => 'now()',
+                'last_modified' => 'now()',
+            ]);
+        } else {
+            zen_db_perform(TABLE_CONFIGURATION, [
+                'configuration_value' => $webhook_id,
+                'last_modified' => 'now()',
+            ], 'UPDATE', "configuration_key='MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS'");
+        }
+    }
+
+    /**
+     * Ensure the webhooks we want to listen for are all registered
+     */
+    public function registerAndUpdateSubscribedWebhooks(): void
+    {
+        $webhook_id = defined('MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS') ? MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS : '';
+
+        if (empty($webhook_id)) {
+            $this->subscribeWebhook();
+            return;
+        }
+
+        // Check whether all the desired webhook actions are registered,
+        // if they're not, send an updated array of event_types names
+
+        $response = $this->curlGet("v1/notifications/webhooks/$webhook_id");
+        if ($response === false) {
+            $this->subscribeWebhook();
+            return;
+        }
+
+        $patchRequired = false;
+        $registeredEvents = [];
+        foreach($response['event_types'] as $event) {
+            $registeredEvents[] = $event['name'];
+        }
+        if ($registeredEvents[0] !== '*') {
+            foreach($this->webhooksToRegister as $hook) {
+                if (!\in_array($hook, $registeredEvents, true)) {
+                    $patchRequired = true;
+                }
+            }
+        }
+
+        if ($patchRequired === false) {
+            return;
+        }
+
+        $events = [];
+        foreach($this->webhooksToRegister as $event) {
+            $events[] = ['name' => $event];
+        }
+        $parameters = ['op' => 'replace', 'path' => '/event_types', 'value' => $events];
+        $response = $this->curlPatch("v1/notifications/webhooks/$webhook_id", [$parameters]);
+    }
+
+    /**
+     * When uninstalling this module, we should cleanup the webhook subscription record, so PayPal stops sending notifications.
+     */
+    public function unsubscribeWebhooks()
+    {
+        $this->log->write("==> Start deleteWebhook Registration", true);
+        $url = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_webhook.php';
+
+        $webhook_id = defined('MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS') ? MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS : '';
+        if (empty($webhook_id)) {
+            // None remembered internally, but let's also check if any are registered at PayPal for our URL, and remove them.
+            $response = $this->curlGet("v1/notifications/webhooks/");
+            if ($response !== false) {
+                foreach ($response['webhooks'] as $webhook) {
+                    if ($webhook['url'] === $url) {
+                        $this->curlDelete("v1/notifications/webhooks/" . $webhook['id']);
+                    }
+                }
+            } else {
+                $this->log->write("No webhook registration ID found in store configuration database. Nothing to do.", true);
+                return;
+            }
+        }
+
+        $response = $this->curlDelete("v1/notifications/webhooks/$webhook_id");
+        if ($response !== false) {
+            global $db;
+            // deregistration successful, so we delete our record.
+            $db->Execute('DELETE FROM ' . TABLE_CONFIGURATION . " WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS'");
+        }
+        $this->log->write("==> End deleteWebhook Registration", true);
     }
 
     // ===== End Token-required Methods =====
@@ -580,6 +730,45 @@ class PayPalRestfulApi extends ErrorInfo
         return $this->issueRequest('curlPatch', $option, $curl_options);
     }
 
+    // -----
+    // A common method for all DELETE requests to PayPal.
+    //
+    // Parameters:
+    // - option
+    //     The option to be performed, e.g. v1/notifications/webhooks/{id}
+    // - options_array
+    //     An (optional) array of options to be supplied, dependent on the 'option' to be sent.
+    //
+    // Return Values:
+    // - On success, an associative array containing the PayPal response.
+    // - On failure, returns false.  The details of the failure can be interrogated via the getErrorInfo method.
+    //
+    //
+    protected function curlDelete($option, $options_array = [])
+    {
+        if ($this->ch === false) {
+            $this->ch = curl_init();
+            if ($this->ch === false) {
+                $this->setErrorInfo(self::ERR_NO_CHANNEL, 'Unable to initialize the CURL channel.');
+                return false;
+            }
+        }
+
+        $url = $this->endpoint . $option;
+        $curl_options = array_replace($this->curlOptions, [CURLOPT_POST => true, CURLOPT_CUSTOMREQUEST => 'DELETE', CURLOPT_URL => $url]);
+        $curl_options = $this->setAuthorizationHeader($curl_options);
+        if (count($curl_options) === 0) {
+            return false;
+        }
+
+        if (count($options_array) !== 0) {
+            $curl_options[CURLOPT_POSTFIELDS] = json_encode($options_array);
+        }
+        curl_reset($this->ch);
+        curl_setopt_array($this->ch, $curl_options);
+        return $this->issueRequest('curlDelete', $option, $curl_options);
+    }
+
     protected function issueRequest(string $request_type, string $option, array $curl_options)
     {
         // -----
@@ -600,7 +789,7 @@ class PayPalRestfulApi extends ErrorInfo
         } else {
             $response = $this->handleResponse($request_type, $option, $curl_options, $curl_response);
         }
-        return $response; 
+        return $response;
     }
 
     // -----
@@ -686,7 +875,7 @@ class PayPalRestfulApi extends ErrorInfo
                 trigger_error($errMsg, E_USER_WARNING);
                 break;
         }
-        
+
         // -----
         // Note the error information in the errorInfo array, log a message to the PayPal log and
         // let the caller know that the request was unsuccessful.

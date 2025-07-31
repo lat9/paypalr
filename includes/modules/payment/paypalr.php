@@ -6,7 +6,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.1.1
+ * Last updated: v1.2.0
  */
 /**
  * Load the support class' auto-loader.
@@ -187,7 +187,7 @@ class paypalr extends base
      */
     public function __construct()
     {
-        global $order, $messageStack;
+        global $order, $messageStack, $loaderPrefix;
 
         $this->code = 'paypalr';
 
@@ -205,6 +205,7 @@ class paypalr extends base
             return false;
         }
 
+        // @TODO - "Retired" check should accommodate 'webhook' mode too, because we do want to still respond to webhooks when in Retired mode.
         $this->enabled = (MODULE_PAYMENT_PAYPALR_STATUS === 'True' || (IS_ADMIN_FLAG === true && MODULE_PAYMENT_PAYPALR_STATUS === 'Retired'));
         if ($this->enabled === false) {
             return;
@@ -252,8 +253,9 @@ class paypalr extends base
             //
             // No observer?  No payment via this module and it's auto-disabled.
             //
-            // The one exception to the above 'rule' is any load from the ipn_main_handler.  The
-            // paypal_ipn.core.php (for whatever reason) doesn't load the auto-loaded observers,
+            // The two exception to the above 'rule' is any load from the ipn_main_handler or a webhook listener.
+            // Webhook classes don't need the Observer, so we just return.
+            // The paypal_ipn.core.php (for whatever reason) doesn't load the auto-loaded observers,
             // so the paypalr one won't be there.  If that's the case, just indicate that the
             // payment module is disabled and return.
             //
@@ -261,8 +263,7 @@ class paypalr extends base
             if (!isset($zcObserverPaypalrestful)) {
                 $this->enabled = false;
 
-                global $loaderPrefix;
-                if (($loaderPrefix ?? '') === 'paypal_ipn') {
+                if (in_array($loaderPrefix ?? '', ['paypal_ipn', 'webhook'], true)) {
                     return;
                 }
                 $this->setConfigurationDisabled(MODULE_PAYMENT_PAYPALR_ALERT_MISSING_OBSERVER);
@@ -290,11 +291,16 @@ class paypalr extends base
 
         // -----
         // Validate the configuration, e.g. that the supplied Client ID/Secret are
-        // valid for the active PayPal server. If the configuration's invalid (admin/storefront)
-        // or if we're processing for the admin, all finished here!
+        // valid for the active PayPal server. If valid, we check the webhook registrations.
+        // If the configuration's invalid (admin/storefront)
+        // or if we're processing for the admin or a webhook, all finished here!
         //
         $this->enabled = $this->validateConfiguration($curl_installed);
-        if ($this->enabled === false || IS_ADMIN_FLAG === true) {
+        if ($this->enabled && IS_ADMIN_FLAG === true) {
+            // register/update known webhooks
+            $this->ppr->registerAndUpdateSubscribedWebhooks();
+        }
+        if ($this->enabled === false || IS_ADMIN_FLAG === true || $loaderPrefix === 'webhook') {
             return;
         }
 
@@ -2205,12 +2211,15 @@ class paypalr extends base
         }
 
         // -----
-        // Starting with v1.1.1, installing the payment module includes creating
-        // its root-directory webhook from a copy within the module's storefront
-        // includes directory.
+        // Starting with v1.2.0, installing the payment module includes creating
+        // its root-directory listeners/handlers from a copy within the module's
+        // storefront includes directory.
         //
         $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_listener.php');
         file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
+
+        $ppr_webhook = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_webhook.php');
+        file_put_contents(DIR_FS_CATALOG . 'ppr_webhook.php', $ppr_webhook);
 
         // We also delete the old ppr_webhook_main.php file if present
         if (file_exists(DIR_FS_CATALOG . 'ppr_webhook_main.php')) {
@@ -2265,13 +2274,16 @@ class paypalr extends base
     {
         global $db;
 
+        // de-register known webhooks
+        $this->ppr->unsubscribeWebhooks();
+
         $db->Execute("DELETE FROM " . TABLE_CONFIGURATION . " WHERE configuration_key LIKE 'MODULE\_PAYMENT\_PAYPALR\_%'");
 
         // -----
-        // Starting with v1.1.1, removing the payment module includes deleting
-        // its root-directory listener, and the prior versions' ppr_webhook_main.php handler.
+        // Starting with v1.1.1, removing the payment module includes deleting its root-directory
+        // listener and webhook handlers, and the prior versions' ppr_webhook_main.php handler.
         //
-        foreach (['ppr_listener.php', 'ppr_webhook_main.php'] as $file) {
+        foreach (['ppr_listener.php', 'ppr_webhook.php', 'ppr_webhook_main.php'] as $file) {
             if (file_exists(DIR_FS_CATALOG . $file)) {
                 unlink(DIR_FS_CATALOG . $file);
             }
@@ -2298,5 +2310,10 @@ class paypalr extends base
                 'paymentalert'
             );
         }
+    }
+
+    public function getCurrentVersion(): string
+    {
+        return self::CURRENT_VERSION;
     }
 }
