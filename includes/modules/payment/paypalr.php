@@ -6,7 +6,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.1.1
+ * Last updated: v1.2.0
  */
 /**
  * Load the support class' auto-loader.
@@ -291,10 +291,15 @@ class paypalr extends base
 
         // -----
         // Validate the configuration, e.g. that the supplied Client ID/Secret are
-        // valid for the active PayPal server. If the configuration's invalid (admin/storefront)
+        // valid for the active PayPal server. If valid, we check the webhook registrations.
+        // If the configuration's invalid (admin/storefront)
         // or if we're processing for the admin or a webhook, all finished here!
         //
         $this->enabled = $this->validateConfiguration($curl_installed);
+        if ($this->enabled && IS_ADMIN_FLAG === true) {
+            // register/update known webhooks
+            $this->ppr->registerAndUpdateSubscribedWebhooks();
+        }
         if ($this->enabled === false || IS_ADMIN_FLAG === true || $loaderPrefix === 'webhook') {
             return;
         }
@@ -2268,6 +2273,9 @@ class paypalr extends base
     public function remove()
     {
         global $db;
+
+        // de-register known webhooks
+        $this->ppr->unsubscribeWebhooks();
 
         $db->Execute("DELETE FROM " . TABLE_CONFIGURATION . " WHERE configuration_key LIKE 'MODULE\_PAYMENT\_PAYPALR\_%'");
 
