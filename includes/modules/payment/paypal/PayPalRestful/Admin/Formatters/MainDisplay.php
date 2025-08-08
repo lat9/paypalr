@@ -5,9 +5,9 @@
  *
  * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
+ * @version $Id: Aug 2025 $
  *
- * Last updated: v1.1.0
+ * Last updated: v1.2.0
  */
 namespace PayPalRestful\Admin\Formatters;
 
@@ -731,6 +731,7 @@ class MainDisplay
 
     protected function createModalButtons(string $submit_button_id, string $toggle_button_name, string $submit_button_name): string
     {
+        zen_define_default('TEXT_PLEASE_WAIT', 'Please wait ...');
         return
             '<div class="btn-group btn-group-justified ppr-button-row">
                 <div class="btn-group">
@@ -738,6 +739,7 @@ class MainDisplay
                 </div>
                 <div class="btn-group">
                     <button type="submit" class="btn btn-danger collapse" id="' . $submit_button_id . '">' . $submit_button_name . '</button>
+                    <script>document.getElementById("' . $submit_button_id . '").addEventListener("click", event => setTimeout(() => {event.target.disabled = true; event.target.innerHTML="' . TEXT_PLEASE_WAIT . '";}, 0)); </script>
                 </div>
             </div>';
     }
