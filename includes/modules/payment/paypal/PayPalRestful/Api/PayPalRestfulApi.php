@@ -18,6 +18,7 @@ namespace PayPalRestful\Api;
 
 use PayPalRestful\Common\ErrorInfo;
 use PayPalRestful\Common\Logger;
+use PayPalRestful\Common\PayPalShippingCarriers;
 use PayPalRestful\Token\TokenCache;
 
 /**
@@ -344,6 +345,110 @@ class PayPalRestfulApi extends ErrorInfo
         $this->log->write('==> Start getRefundStatus', true);
         $response = $this->curlGet("v2/payments/refunds/$paypal_refund_id");
         $this->log->write("==> End getRefundStatus\n", true);
+        return $response;
+    }
+
+    /**
+     * Send package tracking details to PayPal for a given PayPal Transaction ID
+     *
+     * @param string $paypal_txnid
+     * @param string $tracking_number
+     * @param string $carrier_code Must match enum name of valid carriers per https://developer.paypal.com/docs/tracking/reference/carriers/
+     * @param string $action ADD or CANCEL
+     * @param bool $email_buyer Whether PayPal should email tracking info to the buyer
+     * @return false|array
+     */
+    public function updatePackageTracking(
+        string $paypal_txnid,
+        string $tracking_number,
+        string $carrier_code,
+        string $action = 'ADD',
+        bool $email_buyer = false,
+    ): false|array {
+        $this->log->write("==> Start updatePackageTracking($paypal_txnid, " . Logger::logJSON($tracking_number) . ", $carrier_code, $action ...)\n", true);
+
+        if (empty($tracking_number)) {
+            return false;
+        }
+
+        $orderDetails = $this->getOrderStatus($paypal_txnid);
+        if (empty($orderDetails)) {
+            $this->log->write('Cannot find order to update/cancel tracking. Txn ID: ' . $paypal_txnid);
+            return false;
+        }
+        if (($orderStatus = $orderDetails['status'] ?? '(null)') !== 'COMPLETED' || empty($orderDetails['purchase_units'][0]['payments']['captures'])) {
+            $this->log->write("Only orders with COMPLETED captures may add tracking. Txn ID: $paypal_txnid, Status: $orderStatus");
+            return false;
+        }
+
+        if (!in_array($action, ['ADD', 'CANCEL'])) {
+            $action = 'ADD';
+        }
+
+        if ($action === 'ADD') {
+            // carrier code is required if tracking number provided
+            if (empty($carrier_code) && !empty($tracking_number)) {
+                $this->log->write('ERROR: Package Tracking requires a carrier_code value when tracking_number is provided. Carrier code is empty.');
+                return false;
+            }
+            // find country code
+            $country_iso_2 = $orderDetails['purchase_units'][0]['shipping']['address']['country_code'] ?? '';
+            global $db;
+            $sql = "SELECT countries_iso_code_3 FROM " . TABLE_COUNTRIES . " WHERE countries_iso_code_2 = '" . zen_db_input($country_iso_2) . "'";
+            $result = $db->Execute($sql, 1);
+            $country_iso_3 = $result->fields['countries_iso_code_3'] ?? '';
+            $checkedCode = PayPalShippingCarriers::findBestMatch($carrier_code, $country_iso_3);
+
+            if ($checkedCode !== null) {
+                $carrier_code = $checkedCode;
+            }
+            // If carrier name is not officially supported, set to OTHER and use provided name as explanation
+            if (!empty($checkedCode) || PayPalShippingCarriers::isValid($carrier_code)) {
+                $carrier_name_other = null;
+            } else {
+                $carrier_name_other = $carrier_code;
+                $carrier_code = 'OTHER';
+            }
+
+            $paypal_capture_id = $orderDetails['purchase_units'][0]['payments']['captures'][0]['id'];
+
+            $parameters = [
+                'capture_id' => $paypal_capture_id,
+                'tracking_number' => substr($tracking_number, 0, 64),
+                'carrier' => $carrier_code,
+                'carrier_name_other' => $carrier_name_other,
+                'notify_buyer' => $email_buyer,
+            ];
+            $response = $this->curlPost("v2/checkout/orders/$paypal_txnid/track", $parameters);
+
+        } else { // $action == 'CANCEL' (to delete a package tracking number)
+            $trackers = $orderDetails['purchase_units'][0]['shipping']['trackers'] ?? null;
+            if (empty($trackers)) {
+                $this->log->write('No registered trackers found; nothing to update/cancel. Txn ID: ' . $paypal_txnid);
+                return false;
+            }
+            foreach ($trackers as $tracker) {
+                if (\str_ends_with($tracker['id'], $tracking_number)) {
+                    if ($tracker['status'] === 'CANCELLED') {
+                        $this->log->write("Tracker already CANCELLED for tracking_number $tracking_number; nothing to update/cancel. Txn ID: $paypal_txnid");
+                        return false;
+                    }
+                    // use the located id
+                    $tracker_id = $tracker['id'];
+                    break;
+                }
+            }
+            if (empty($tracker_id)) {
+                $this->log->write("No registered trackers found for tracking_number $tracking_number; nothing to update/cancel. Txn ID: $paypal_txnid");
+                return false;
+            }
+            $parameters = ['op' => 'replace', 'path' => '/status', 'value' => 'CANCELLED'];
+            $response = $this->curlPatch("v2/checkout/orders/$paypal_txnid/trackers/$tracker_id", [$parameters]);
+            if ($response === null) {
+                $response = ['success'];
+            }
+        }
+        $this->log->write("==> End updatePackageTracking", true);
         return $response;
     }
 
