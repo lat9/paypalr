@@ -21,7 +21,6 @@ class zcObserverPaypalrestful
     protected array $lastOrderValues = [];
     protected array $orderTotalChanges = [];
     protected bool $freeShippingCoupon = false;
-    protected bool $adminBeforeInsertDone = false;
 
     public function __construct()
     {
@@ -30,14 +29,6 @@ class zcObserverPaypalrestful
         // enabled, nothing further to do here.
         //
         if (!defined('MODULE_PAYMENT_PAYPALR_STATUS') || MODULE_PAYMENT_PAYPALR_STATUS !== 'True') {
-            return;
-        }
-
-        if (IS_ADMIN_FLAG) {
-            $this->attach($this, ['ZEN_UPDATE_ORDERS_HISTORY_AFTER_INSERT']);
-            if (zen_get_zcversion() < 2.2) {
-                $this->attach($this, ['ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT']);
-            }
             return;
         }
 
@@ -108,68 +99,6 @@ class zcObserverPaypalrestful
     {
         $coupon_type = $parameters['coupon']['coupon_type'];
         $this->freeShippingCoupon = in_array($coupon_type, ['S', 'E', 'O']);
-    }
-
-    /**
-     * @param array $data [int orders_id, int orders_status_id, date_added, int customer_notified, comments, updated_by]
-     */
-    public function updateZenUpdateOrdersHistoryBeforeInsert(&$class, $eventID, $null, array $data): void
-    {
-        $this->updateZenUpdateOrdersHistoryAfterInsert($class, $eventID, 0, $data);
-        $this->detach($this, ['ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT']);
-        $this->adminBeforeInsertDone = true;
-    }
-
-    /**
-     * @param array $data [int orders_id, int orders_status_id, date_added, int customer_notified, comments, updated_by]
-     */
-    public function updateZenUpdateOrdersHistoryAfterInsert(&$class, $eventID, int $osh_id, array $data): void
-    {
-        if ($this->adminBeforeInsertDone) {
-            // avoid double-processing when attached to an older version's ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT
-            return;
-        }
-        // Parse POST for tracking IDs.
-        $track_ids = [];
-        for ($i = 1; $i <= 5; $i++) {
-            $track_id_var = "track_id$i";
-            if (empty($_POST[$track_id_var])) {
-                continue;
-            }
-            $track_ids[$i] = str_replace(' ', '', zen_db_prepare_input($_POST[$track_id_var]));
-        }
-        // Abort if no tracking IDs found.
-        if (count($track_ids) === 0) {
-            return;
-        }
-        $order_id = (int)$data['orders_id'];
-        // Lookup the initial PayPal transaction record related to this order.
-        $paypalLookup = $GLOBALS['db']->Execute(
-            "SELECT txn_id, txn_type
-                 FROM " . TABLE_PAYPAL . "
-                 WHERE order_id = $order_id
-                 ORDER BY date_added, parent_txn_id, paypal_ipn_id", 1
-        );
-        $paypal = $paypalLookup->EOF ? [] : $paypalLookup->fields;
-        if (empty($paypal)) {
-            return;
-        }
-
-        require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypalr.php';
-        [$client_id, $secret] = \paypalr::getEnvironmentInfo();
-        $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
-
-        foreach ($track_ids as $i => $tracking_number) {
-            if (empty($tracking_number)) {
-                continue;
-            }
-            // Add the tracking number to the PayPal transaction.
-            $carrier_name = defined("CARRIER_NAME_$i") && !empty("CARRIER_NAME_$i") ? constant("CARRIER_NAME_$i") : 'OTHER';
-            $result = $ppr->updatePackageTracking($paypal['txn_id'], $tracking_number, $carrier_name, 'ADD');
-        }
-
-        // De-register, to prevent multiple insertions in this cycle.
-        $this->detach($this, ['ZEN_UPDATE_ORDERS_HISTORY_AFTER_INSERT']);
     }
 
     // -----
