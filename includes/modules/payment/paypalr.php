@@ -6,7 +6,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.2.1
+ * Last updated: v1.3.0
  */
 /**
  * Load the support class' auto-loader.
@@ -33,7 +33,7 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    protected const CURRENT_VERSION = '1.2.1';
+    protected const CURRENT_VERSION = '1.3.0-alpha';
 
     protected const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
@@ -440,6 +440,20 @@ class paypalr extends base
                             ('Store (Sub-Brand) Identifier at PayPal', 'MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR', '', 'On customer credit card statements, your company name will show as <code>PAYPAL*(yourname)*(your-sub-brand-name)</code> (max 22 letters for (yourname)*(your-sub-brand-name)). You can add the sub-brand-name here if you want to differentiate purchases from this store vs any other PayPal sales you make.', 6, 0, NULL, NULL, now())"
                     );
 
+                    $db->Execute(
+                        "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
+                            (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
+                         VALUES
+                            ('Payment Methods Allowed', 'MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS', 'card, credit, paylater, venmo', 'Which PayPal-supported additional payment methods are you willing to accept?<br><br>Options which you select here will be offered to customers only IF the customer (and your PayPal account) is eligible.<br>Deselected options will never be shown to customers.<br><b>Default: card,credit,paylater,venmo</b>', 6, 0, 'zen_cfg_select_multioption([\'card=Debit/Credit card\', \'credit=PayPal Credit (US, UK)\', \'paylater=Pay Later (US, UK), Pay in 4 (AU), 4X PayPal (France), Später Bezahlen (Germany)\', \'venmo=Venmo\', \'bancontact=Bancontact\', \'blik=BLIK\', \'eps=eps\', \'ideal=iDeal\', \'mercadopago=Mercado Pago\', \'mybank=MyBank\', \'p24=Przelewy24\', \'sepa=SEPA-Lastschrift\'], ', NULL, now())"
+                    );
+
+                    $db->Execute(
+                        "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
+                            (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
+                         VALUES
+                            ('Button Placement', 'MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT', 'Product, Cart', 'In addition to Checkout pages, where else would you like to allow customers to click-to-buy immediately? This may accelerate buying decisions.<br><b>Default: Product, Cart</b>', 6, 0, 'zen_cfg_select_multioption([\'Product\', \'Cart\'], ', NULL, now())"
+                    );
+
                     // -----
                     // Starting with v1.2.0, installing the payment module includes creating
                     // its root-directory listeners/handlers from a copy within the module's
@@ -600,12 +614,12 @@ class paypalr extends base
 
         trigger_error("Setting configuration disabled: $error_message", E_USER_WARNING);
 
-        $db->Execute(
-            "UPDATE " . TABLE_CONFIGURATION . "
-                SET configuration_value = 'False'
-              WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_STATUS'
-              LIMIT 1"
-        );
+//        $db->Execute(
+//            "UPDATE " . TABLE_CONFIGURATION . "
+//                SET configuration_value = 'False'
+//              WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_STATUS'
+//              LIMIT 1"
+//        );
 
         $error_message .= MODULE_PAYMENT_PAYPALR_AUTO_DISABLED;
         if (IS_ADMIN_FLAG === true) {
@@ -853,6 +867,9 @@ class paypalr extends base
                         '<style nonce="">' . file_get_contents($css_file_name) . '</style>' .
                         '<span class="ppr-choice-label">' . MODULE_PAYMENT_PAYPALR_CHOOSE_PAYPAL . '</span>',
                     'field' =>
+                        '<div id="paypal-message-container"></div>' .
+                        '<div id="paypal-marks-container"></div>' .
+                        '<div id="paypal-buttons-container"></div>' .
                         '<div id="ppr-choice-paypal" class="ppr-button-choice">' .
                             zen_draw_radio_field('ppr_type', 'paypal', $paypal_selected, 'id="ppr-paypal" class="ppr-choice"') .
                             '<label for="ppr-paypal" class="ppr-choice-label">' .
@@ -983,6 +1000,7 @@ class paypalr extends base
         //
         $ppr_type = $_POST['ppr_type'];
         $_SESSION['PayPalRestful']['ppr_type'] = $ppr_type;
+
         if ($ppr_type === 'card' && $this->validateCardInformation(true) === false) {
             $log_only = true;
             $this->setMessageAndRedirect("pre_confirmation_check, card failed initial validation.", FILENAME_CHECKOUT_PAYMENT, $log_only);
@@ -1005,7 +1023,7 @@ class paypalr extends base
         }
 
         // -----
-        // If the payment is *not* to be processed by PayPal 'proper' (e.g. a 'card' payment) or if
+        // If the payment is *not* to be processed by PayPal wallet (type='paypal') (e.g. a 'card' payment) or if
         // the customer has already confirmed their payment choice at PayPal, nothing further to do
         // at this time.
         //
@@ -1020,10 +1038,10 @@ class paypalr extends base
         }
 
         // -----
-        // The payment is to be processed by PayPal 'proper', send the customer off to
+        // The payment is to be processed by PayPal wallet (type='paypal'), send the customer off to
         // PayPal to confirm their payment source.  That'll either come back to the checkout_confirmation
-        // page (via the payment module's webhook) if they choose a payment means or back to the
-        // checkout_payment page if they cancelled-out from PayPal.
+        // page (via the payment module's ppr_listener) if they choose a payment means
+        // or back to the checkout_payment page if they cancelled-out from PayPal.
         //
         global $order;
         $confirm_payment_choice_request = new ConfirmPayPalPaymentChoiceRequest(self::REDIRECT_LISTENER, $order);
@@ -1056,7 +1074,7 @@ class paypalr extends base
         }
 
         // -----
-        // Save the posted variables from the payment phase of checkout; the webhook will use those to restore after
+        // Save the posted variables from the payment phase of checkout; the ppr_listener will use those to restore after
         // PayPal returns.
         //
         global $current_page_base;
@@ -1067,6 +1085,12 @@ class paypalr extends base
         $this->log->write('pre_confirmation_check, sending the payer-action off to PayPal.', true, 'after');
         zen_redirect($action_link);
     }
+
+    /**
+     * @TODO - Deprecate this when using JS SDK, since it is all irrelevant then.
+     *
+     * @deprecated since 1.3.0 due to use of PayPal's JS SDK for hosted card fields.
+     */
     protected function validateCardInformation(bool $is_preconfirmation): bool
     {
         global $messageStack, $order;
@@ -1161,8 +1185,8 @@ class paypalr extends base
         $create_order_request = new CreatePayPalOrderRequest($ppr_type, $order, $this->ccInfo, $order_info, $zcObserverPaypalrestful->getOrderTotalChanges());
 
         // -----
-        // If the order's request-creation resulted in a calculation mismatch, send an alert if
-        // configured.
+        // If the order's request-creation resulted in a calculation mismatch,
+        // send an alert if configured.
         //
         $order_amount_mismatch = $create_order_request->getBreakdownMismatch();
         if (count($order_amount_mismatch) !== 0) {
@@ -1227,6 +1251,7 @@ class paypalr extends base
         //
         // Force the module's status to disabled and kick the customer back to the payment phase of the checkout process.
         //
+        /** @var zcObserverPaypalrestful $zcObserverPaypalrestful */
         global $zcObserverPaypalrestful;
         $order_info = $zcObserverPaypalrestful->getLastOrderValues();
         if (count($order_info) === 0) {
@@ -2110,6 +2135,10 @@ class paypalr extends base
 
                 ('Enable this Payment Module?', 'MODULE_PAYMENT_PAYPALR_STATUS', 'False', 'Do you want to enable this payment module? Use the <b>Retired</b> setting if you are planning to remove this payment module but still have administrative actions to perform against orders placed with this module.', 6, 0, 'zen_cfg_select_option([\'True\', \'False\', \'Retired\'], ', NULL, now()),
 
+                ('Payment Methods Allowed', 'MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS', 'card,credit,paylater,venmo', 'Which PayPal-supported additional payment methods are you willing to accept?<br><br>Options which you select here will be offered to customers only IF the customer (and your PayPal account) is eligible.<br>Deselected options will never be shown to customers.<br><b>Default: card,credit,paylater,venmo</b>', 6, 0, 'zen_cfg_select_multioption([\'card=Debit/Credit card\', \'credit=PayPal Credit (US, UK)\', \'paylater=Pay Later (US, UK), Pay in 4 (AU), 4X PayPal (France), Später Bezahlen (Germany)\', \'venmo=Venmo\', \'bancontact=Bancontact\', \'blik=BLIK\', \'eps=eps\', \'ideal=iDeal\', \'mercadopago=Mercado Pago\', \'mybank=MyBank\', \'p24=Przelewy24\', \'sepa=SEPA-Lastschrift\'], ', NULL, now()),
+
+                ('Button Placement', 'MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT', 'Product, Cart', 'In addition to Checkout pages, where else would you like to allow customers to click-to-buy immediately? This may accelerate buying decisions.<br><b>Default: Product, Cart</b>', 6, 0, 'zen_cfg_select_multioption([\'Product\', \'Cart\'], ', NULL, now()),
+
                 ('Environment', 'MODULE_PAYMENT_PAYPALR_SERVER', 'live', '<b>Live: </b> Used to process Live transactions<br><b>Sandbox: </b>For developers and testing', 6, 0, 'zen_cfg_select_option([\'live\', \'sandbox\'], ', NULL, now()),
 
                 ('Client ID (live)', 'MODULE_PAYMENT_PAYPALR_CLIENTID_L', '', 'The <em>Client ID</em> from your PayPal API Signature settings under *API Access* for your <b>live</b> site. Required if using the <b>live</b> environment.', 6, 0, NULL, 'zen_cfg_password_display', now()),
@@ -2259,6 +2288,8 @@ class paypalr extends base
             'MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE',
             'MODULE_PAYMENT_PAYPALR_SCA_ALWAYS',
             'MODULE_PAYMENT_PAYPALR_ACCEPT_CARDS',
+            'MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS',
+            'MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT',
             'MODULE_PAYMENT_PAYPALR_SORT_ORDER',
             'MODULE_PAYMENT_PAYPALR_ZONE',
             'MODULE_PAYMENT_PAYPALR_SERVER',

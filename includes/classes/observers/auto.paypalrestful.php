@@ -1,6 +1,7 @@
 <?php
 /**
  * Part of the paypalr (PayPal Restful Api) payment module.
+ * This observer-class handles the JS SDK integration logic.
  * It also watches for notifications from the 'order_total' class,
  * introduced in this (https://github.com/zencart/zencart/pull/6090) Zen Cart PR,
  * to determine an order's overall value and what amounts each order-total
@@ -8,8 +9,10 @@
  *
  * Last updated: v1.2.0
  */
- 
+
+use PayPalRestful\Api\Data\CountryCodes;
 use PayPalRestful\Api\PayPalRestfulApi;
+use PayPalRestful\Zc2Pp\Amount;
 use Zencart\Traits\ObserverManager;
 
 require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
@@ -21,6 +24,7 @@ class zcObserverPaypalrestful
     protected array $lastOrderValues = [];
     protected array $orderTotalChanges = [];
     protected bool $freeShippingCoupon = false;
+    protected bool $headerAssetsSent = false;
 
     public function __construct()
     {
@@ -65,6 +69,12 @@ class zcObserverPaypalrestful
                 'NOTIFY_OT_COUPON_CALCS_FINISHED',
             ]);
         }
+
+        // -----
+        // Attach to header to render JS SDK assets.
+        $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN', 'NOTIFY_HTML_HEAD_END']);
+        // Attach to footer to instantiate the JS.
+        $this->attach($this, ['NOTIFY_FOOTER_END']);
     }
 
     // -----
@@ -99,6 +109,24 @@ class zcObserverPaypalrestful
     {
         $coupon_type = $parameters['coupon']['coupon_type'];
         $this->freeShippingCoupon = in_array($coupon_type, ['S', 'E', 'O']);
+    }
+
+    public function updateNotifyHtmlHeadEnd(&$class, $eventID, $current_page_base): void
+    {
+        // This is a fallback for older versions, to ensure we only output the header JS once.
+        if ($this->headerAssetsSent) {
+            return;
+        }
+        $this->outputJsSdkHeaderAssets($current_page_base);
+    }
+    public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base): void
+    {
+        $this->outputJsSdkHeaderAssets($current_page_base);
+        $this->headerAssetsSent = true;
+    }
+    public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base): void
+    {
+        $this->outputJsFooter($current_page_base);
     }
 
     // -----
@@ -216,4 +244,157 @@ class zcObserverPaypalrestful
     {
         return $this->freeShippingCoupon;
     }
+
+
+    /** Internal methods **/
+
+    protected function outputJsSdkHeaderAssets($current_page): void
+    {
+        global $current_page_base, $order, $tpl_page_body, $paypalSandboxBuyerCountryCodeOverride, $paypalSandboxLocaleOverride;
+        if (empty($current_page)) {
+            $current_page = $current_page_base;
+        }
+
+        $js_url = 'https://www.paypal.com/sdk/js';
+        $js_fields = [];
+        $js_scriptparams = [];
+
+        $js_fields['client-id'] = MODULE_PAYMENT_PAYPALR_SERVER === 'live' ? MODULE_PAYMENT_PAYPALR_CLIENTID_L : MODULE_PAYMENT_PAYPALR_CLIENTID_S;
+
+        if (MODULE_PAYMENT_PAYPALR_SERVER === 'sandbox') {
+            $js_fields['client-id'] = 'sb'; // 'sb' for sandbox
+            $js_fields['debug'] = 'true'; // sandbox only, un-minifies the JS
+            $buyerCountry = CountryCodes::ConvertCountryCode($order->delivery['country']['iso_code_2'] ?? 'US');
+            $js_fields['buyer-country'] = $paypalSandboxBuyerCountryCodeOverride ?? $buyerCountry; // sandbox only
+            $js_fields['locale'] = $paypalSandboxLocaleOverride ?? 'en_US'; // only passing this in sandbox to allow override testing; otherwise just letting it default to customer's browser
+        }
+
+        if (!empty($order->info['currency'])) {
+            $amount = new Amount($order->info['currency']);
+            $js_fields['currency'] = $amount->getDefaultCurrencyCode();
+        }
+
+        // possible components: buttons,marks,messages,funding-eligibility,hosted-fields,card-fields,applepay
+        $js_fields['components'] = 'buttons,marks,messages,card-fields,funding-eligibility';
+
+        // commit value is a boolean string; 'true' = pay-now, 'false'=continue to final confirmation
+        $confirmation_pages = [FILENAME_CHECKOUT_CONFIRMATION];
+        if (defined('FILENAME_CHECKOUT_ONE_CONFIRMATION')) {
+            $confirmation_pages[] = FILENAME_CHECKOUT_ONE_CONFIRMATION;
+        }
+        if (in_array($current_page, $confirmation_pages, true)) {
+            $js_fields['commit'] = 'true'; // pay-now
+        } else {
+            $js_fields['commit'] = 'false'; // will confirm on subsequent page
+        }
+
+        if (str_starts_with(MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE, 'Auth')) {
+//            $js_fields['intent'] = 'AUTHORIZE'; // default is 'CAPTURE', so we only set intent in cases where we want to override that
+        }
+
+        // filter MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS to specify which ones the merchant has opted to disable
+        $potentialMethods = ['card', 'credit', 'paylater', 'venmo', 'bancontact', 'blik', 'eps', 'ideal', 'mercadopago', 'mybank', 'p24', 'sepa'];
+        $enabledMethods = array_map(static fn($value) => strstr($value, '=', true) ?: $value, explode(', ', MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS));
+        $disabledMethods = [];
+        foreach ($potentialMethods as $value) {
+            if (!in_array($value, $enabledMethods, true)) {
+                $disabledMethods[] = $value;
+            }
+        }
+        $js_fields['disable-funding'] = implode(',', $disabledMethods);
+
+        // ---
+        $js_page_type = match (true) {
+            str_starts_with($current_page, "checkout") => 'checkout',
+            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'shopping_cart' => 'cart',
+            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'mini-cart' => 'mini-cart',
+            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Product') && in_array($current_page, zen_get_buyable_product_type_handlers(), true) => 'product-details',
+            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Listing') && ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
+            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Search') && $current_page === 'advanced_search_result' => 'search-results',
+            default => null,
+        };
+        if ($js_page_type) {
+            $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
+        }
+
+        $js_fields['integration-date'] = '2025-08-01';
+        $js_scriptparams[] = 'data-partner-attribution-id="ZenCart_SP_PPCP"';
+        $js_scriptparams[] = 'data-namespace="PayPalSDK"';
+
+        ?>
+<link title="PayPal Cardfields CSS" href="https://www.paypalobjects.com/webstatic/en_US/developer/docs/css/cardfields.css" rel="stylesheet"/>
+<script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> async></script>
+<?php
+    }
+
+    protected function outputJsFooter($current_page): void
+    {
+        $messageProps = $this->getMessageProps();
+
+        $message_selector = match($current_page) {
+            'product_info' => '.productPriceBottomPrice',
+            FILENAME_SHOPPING_CART => '#paypal-message-container',
+            default => '#paypal-message-container',
+        };
+
+        echo '  <script title="PayPal Functions">';
+        echo '       let messageProps = ' . json_encode($messageProps) . ';' . "\n";
+        echo '       let messageSelector = "' . $message_selector . '";' . "\n";
+        echo file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk.js');
+        echo '  </script>' . "\n\n";
+        return;
+    }
+
+    protected function getMessageProps(): array
+    {
+        global $current_page_base, $tpl_page_body;
+        return [
+            'style' => [
+                'layout' => 'text',
+                'logo' => [
+                    'type' => 'inline',
+                    'position' => 'top',
+                ],
+                'text' => [
+                    'align' => 'right',
+                ],
+            ],
+            'pageType' => match(true) {
+                str_starts_with($current_page_base, "checkout") => 'checkout',
+                $current_page_base === 'shopping_cart' => 'cart',
+                $current_page_base === 'mini-cart' => 'mini-cart',
+                in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
+                ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
+                $current_page_base === 'advanced_search_result' => 'search-results',
+                default => 'home',
+            },
+        ];
+    }
+
 }
+
+
+
+
+
+/*****************************/
+// Backward Compatibility for prior to ZC v2.2.0
+if (!function_exists('zen_get_buyable_product_type_handlers')) {
+    /**
+     * Get a list of product page names that identify buyable products.
+     * This allows us to mark a page as containing a product which can
+     * be allowed to add-to-cart or buy-now with various modules.
+     */
+    function zen_get_buyable_product_type_handlers(): array
+    {
+        global $db;
+        $sql = "SELECT type_handler from " . TABLE_PRODUCT_TYPES . " WHERE allow_add_to_cart = 'Y'";
+        $results = $db->Execute($sql);
+        $retVal = [];
+        foreach ($results as $result) {
+            $retVal[] = $result['type_handler'] . '_info';
+        }
+        return $retVal;
+    }
+}
+/*****************************/
