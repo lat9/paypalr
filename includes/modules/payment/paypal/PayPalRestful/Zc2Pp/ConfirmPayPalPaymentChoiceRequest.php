@@ -7,7 +7,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.0.5
+ * Last updated: v1.2.0
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -73,9 +73,15 @@ class ConfirmPayPalPaymentChoiceRequest
                     'user_action' => $user_action,  //- PAY_NOW or CONTINUE
                     'return_url' => $listener_endpoint . '?op=return',
                     'cancel_url' => $listener_endpoint . '?op=cancel',
+                    'app_switch_preference' => ['launch_paypal_app' => true],
                 ],
             ],
         ];
+
+        if ($user_action === 'PAY_NOW' && (!defined('MODULE_PAYMENT_PAYPALR_APP_SWITCH') || MODULE_PAYMENT_PAYPALR_APP_SWITCH !== 'No')) {
+            $this->request['paypal']['experience_context']['app_switch_preference']['launch_paypal_app'] = true;
+            $this->request['paypal']['experience_context']['user_action'] = 'PAY_NOW';
+        }
 
         $logger = new Logger();
         $logger->write("\ConfirmPayPalPaymentChoiceRequest::__construct(...) finished, request:\n" . Logger::logJSON($this->request));
