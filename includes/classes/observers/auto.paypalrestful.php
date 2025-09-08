@@ -7,7 +7,7 @@
  * to determine an order's overall value and what amounts each order-total
  * module has added/subtracted to the order's overall value.
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 use PayPalRestful\Api\Data\CountryCodes;
