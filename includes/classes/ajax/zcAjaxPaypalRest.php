@@ -20,7 +20,8 @@ class zcAjaxPaypalRest extends base
     protected bool $enableDebugFileLogging = true;
     protected Logger $log;
 
-    public function __construct() {
+    public function __construct()
+    {
         // Create logger, just for logging to /logs directory
         $this->log = new Logger('ajax');
 
@@ -33,7 +34,6 @@ class zcAjaxPaypalRest extends base
         require DIR_WS_CLASSES . 'shipping.php';
         require DIR_WS_CLASSES . 'payment.php';
         require DIR_WS_CLASSES . 'order_total.php';
-
     }
 
     /**
@@ -51,25 +51,24 @@ class zcAjaxPaypalRest extends base
         $page_url = $_POST['page_url'] ?? '';
         $ppr_type = $_POST['ppr_type'] ?? '';
 
-$this->log->write('zcAjaxPaypalRest::getOrder data: ' . print_r($formdata, true), true, 'after');
-
+        $this->log->write('zcAjaxPaypalRest::getOrder data: ' . print_r($formdata, true), true, 'after');
 
 
         $customer = new Customer($_SESSION['customer_id']);
         if (zen_get_customer_validate_session($_SESSION['customer_id']) === false) {
-            // @TODO - do we create a new customer here?
+            // @TODO - Create a customer here?
         }
 
 
-        // if free shipping selected, but order no longer qualifies, remove it
+
+        // if free shipping selected, but order no longer qualifies, remove free-shipping
         if (isset($_SESSION['shipping']['id'])
             && $_SESSION['shipping']['id'] === 'free_free'
             && $_SESSION['cart']->get_content_type() !== 'virtual'
             && defined('MODULE_ORDER_TOTAL_SHIPPING_FREE_SHIPPING')
             && MODULE_ORDER_TOTAL_SHIPPING_FREE_SHIPPING === 'true'
             && defined('MODULE_ORDER_TOTAL_SHIPPING_FREE_SHIPPING_OVER')
-            && $_SESSION['cart']->show_total() < MODULE_ORDER_TOTAL_SHIPPING_FREE_SHIPPING_OVER)
-        {
+            && $_SESSION['cart']->show_total() < MODULE_ORDER_TOTAL_SHIPPING_FREE_SHIPPING_OVER) {
             unset($_SESSION['shipping']);
         }
         // if no shipping method has been selected, autodetect the cheapest available shipping method
@@ -140,7 +139,7 @@ $this->log->write('zcAjaxPaypalRest::getOrder data: ' . print_r($formdata, true)
     public function captureOrder()
     {
         $data = $_POST['data'] ?? [];
-error_log('zcAjaxPaypalRest::getOrder data: ' . print_r($data, true));
+        error_log('zcAjaxPaypalRest::getOrder data: ' . print_r($data, true));
         //$paypalOrder = $_SESSION['PayPalRestful']['Order'] ?? null;
 
 
@@ -170,20 +169,21 @@ error_log('zcAjaxPaypalRest::getOrder data: ' . print_r($data, true));
         $zco_notifier->notify('NOTIFY_HEADER_END_CHECKOUT_PROCESS', $insert_id);
         return ([
             'order' => null,
-            'redirect_page' => zen_href_link(FILENAME_CHECKOUT_SUCCESS, (($_GET['action'] ?? '') === 'confirm' ? 'action=confirm' : 'order_id=' . $insert_id), 'SSL')
+            'redirect_page' => zen_href_link(FILENAME_CHECKOUT_SUCCESS, (($_GET['action'] ?? '') === 'confirm' ? 'action=confirm' : 'order_id=' . $insert_id), 'SSL'),
         ]);
     }
+
     /**
      *
      */
     public function shippingAddressChange()
     {
-        // data:
-        //     errors: Errors to show to the user.
-        //         ADDRESS_ERROR: "Your order can't be shipped to this address."
-        //         COUNTRY_ERROR: "Your order can't be shipped to this country."
-        //         STATE_ERROR: "Your order can't be shipped to this state."
-        //         ZIP_ERROR: "Your order can't be shipped to this zip."
+        //data:
+        // errors: Errors to show to the user.
+        //   ADDRESS_ERROR: "Your order can't be shipped to this address."
+        //   COUNTRY_ERROR: "Your order can't be shipped to this country."
+        //   STATE_ERROR: "Your order can't be shipped to this state."
+        //   ZIP_ERROR: "Your order can't be shipped to this zip."
         // orderID: An ID that represents an order.
         // paymentID: An ID that represents a payment.
         // paymentToken: An ID or token that represents a resource.
@@ -194,6 +194,11 @@ error_log('zcAjaxPaypalRest::getOrder data: ' . print_r($data, true));
         //     state: Shipping address state or province.
 
         $data = $_POST['data'] ?? [];
+        $address = $data['shippingAddress'] ?? [];
+        $country = $address['countryCode'] ?? '';
+        $state = $address['state'] ?? '';
+        $zip = $address['postalCode'] ?? '';
+        $city = $address['city'] ?? '';
 
         // @TODO - check the address for various "invalid" scenarios, and send status
 
@@ -201,6 +206,7 @@ error_log('zcAjaxPaypalRest::getOrder data: ' . print_r($data, true));
             'error' => false, // or 'country', 'state', 'zip', 'address'
         ]);
     }
+
     /**
      *
      */
@@ -226,7 +232,28 @@ error_log('zcAjaxPaypalRest::getOrder data: ' . print_r($data, true));
         $data = $_POST['data'] ?? [];
 
         return ([
-            'response' => []
+            'response' => [],
         ]);
+    }
+
+    protected function productsInStock(array $products = []): bool
+    {
+        // If stock checking is disabled, or if checkout is allowed when out of stock, pass.
+        if (STOCK_CHECK !== 'true' || STOCK_ALLOW_CHECKOUT === 'true') {
+            return true;
+        }
+
+        if (empty($products)) {
+            $products = $_SESSION['cart']->get_products();
+        }
+        foreach ($products as $product) {
+            $qtyAvailable = zen_get_products_stock($product['id']);
+            // compare against product inventory, and against mixed=YES
+            if ($qtyAvailable - $product['quantity'] < 0
+                || $qtyAvailable - $_SESSION['cart']->in_cart_mixed($product['id']) < 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }

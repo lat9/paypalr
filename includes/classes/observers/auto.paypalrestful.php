@@ -324,6 +324,9 @@ class zcObserverPaypalrestful
         ?>
 <link title="PayPal Cardfields CSS" href="https://www.paypalobjects.com/webstatic/en_US/developer/docs/css/cardfields.css" rel="stylesheet"/>
 <script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> async></script>
+<script title="PayPal page type" id="PayPalPageType">
+    window.paypalPageType = '<?= $js_page_type ?? 'other' ?>';
+</script>
 <?php
     }
 
@@ -331,7 +334,7 @@ class zcObserverPaypalrestful
     {
         $messageProps = $this->getMessageProps();
 
-        $message_selector = match($current_page) {
+        $message_container = match($current_page) {
             'product_info' => '.productPriceBottomPrice',
             FILENAME_SHOPPING_CART => '#paypal-message-container',
             default => '#paypal-message-container',
@@ -339,7 +342,7 @@ class zcObserverPaypalrestful
 
         echo '  <script title="PayPal Functions">';
         echo '       let messageProps = ' . json_encode($messageProps) . ';' . "\n";
-        echo '       let messageSelector = "' . $message_selector . '";' . "\n";
+        echo '       let messageContainer = "' . $message_container . '";' . "\n";
         echo file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk.js');
         echo '  </script>' . "\n\n";
         return;

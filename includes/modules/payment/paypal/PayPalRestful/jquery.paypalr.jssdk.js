@@ -14,7 +14,6 @@ jQuery(document).ready(function () {
             // https://developer.paypal.com/docs/checkout/standard/customize/app-switch/
             appSwitchWhenAvailable: true, // indicator to trigger App Switch on eligible devices
 
-
             createOrder() {
                 // This function is called when the customer clicks the PayPal button.
                 // It triggers creation of an Order request for the current state of purchase activity
@@ -30,6 +29,7 @@ jQuery(document).ready(function () {
                 }).done(function (response) {
                     return response.order.id;
                 }).always(function (response) {
+// @TODO - remove
                     console.error(response);
                 });
             },
@@ -59,7 +59,7 @@ jQuery(document).ready(function () {
                 alert('An error occurred while processing your payment. Please try again.');
             },
 
-            // // onInit is called when the button first renders
+            // onInit is called when the button first renders; we use it to hide/display other options
             // onInit(data, actions) {
             //     // Disable the buttons
             //     actions.disable();
@@ -75,9 +75,9 @@ jQuery(document).ready(function () {
             //     });
             // },
             //
-            // // onClick is called when the button is selected
+            // // onClick is called when the PayPal button is selected
             // onClick() {
-            //     // Show a validation error if the checkbox isn't checked
+            //     // example action: Show a validation error if the checkbox isn't checked
             //     if (!document.querySelector("#checkbox").checked) {
             //         document.querySelector("#error").classList.remove("hidden");
             //     }
@@ -88,7 +88,7 @@ jQuery(document).ready(function () {
                 window.location.assign("/index.php?main_page=shopping_cart");
             },
 
-
+            // Allow PayPal to query and display whether we can/will ship to the customer's selected address.
             onShippingAddressChange(data, actions) {
                 return zcJS.ajax({
                     url: "ajax.php?act=ajaxPaypalRest&method=shippingAddressChange",
@@ -115,6 +115,7 @@ jQuery(document).ready(function () {
                 });
             },
 
+            // If buyer changes address on PayPal end, return updated shipping cost
             onShippingOptionsChange(data, actions) {
                 return zcJS.ajax({
                     url: "ajax.php?act=ajaxPaypalRest&method=shippingOptionsChange",
@@ -131,21 +132,22 @@ jQuery(document).ready(function () {
 
         });
 
-        // If using App Switch, the buyer may end up in a new tab depending on the browser
-        // To trigger flow completion, we call resume():
         if (ppButtons.hasReturned()) {
+            // If using App Switch, the buyer may end up in a new tab depending on the browser; to trigger flow completion, we call resume():
             ppButtons.resume();
-        } else {
+        } else if (document.getElementById("#paypal-buttons-container")) {
+            // If we're on a page where PayPal buttons have a container where checkout buttons should display, render them.
             ppButtons.render("#paypal-buttons-container");
         }
 
-        PayPalSDK.Messages(messageProps).render(messageSelector);
+        // Render any PayPal PayLater messages if an appropriate container exists.
+        PayPalSDK.Messages(messageProps).render(messageContainer);
 
         const cardFields = PayPalSDK.CardFields({
             createOrder() {
-                // This function is called when the customer clicks the PayPal button.
-                // It triggers creation of an Order request for the current state of purchase activity
-                // and expects to receive back the order ID, which the SDK will then use to suggest funding selections.
+                // When customer clicks to start a cardfields checkout, this triggers creation
+                // of an Order request for the current state of purchase activity (page they're on)
+                // and expects to receive back the order ID, which the SDK will then use to link the credit card purchase.
                 return zcJS.ajax({
                     url: "ajax.php?act=ajaxPaypalRest&method=getCardFieldsOrder",
                     data: {
@@ -157,6 +159,7 @@ jQuery(document).ready(function () {
                 }).done(function (response) {
                     return response.order.id;
                 }).always(function (response) {
+                    // @TODO - remove
                     console.log(response);
                 });
             },
@@ -181,9 +184,9 @@ jQuery(document).ready(function () {
 
             onError(err) {
                 // This function is called when there is an error during the payment process.
-                // We have many options for handling an error. This is just something overly basic.
+                // There are many options for handling an error. This is just something overly basic.
                 console.error('PayPal Error:', err);
-                alert('An error occurred while processing your payment. Please try again.');
+                alert('An error occurred while processing your card payment. Please try again.');
             },
         });
 
