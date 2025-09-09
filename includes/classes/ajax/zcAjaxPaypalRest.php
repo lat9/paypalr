@@ -29,20 +29,25 @@ class zcAjaxPaypalRest extends base
         if ($this->enableDebugFileLogging) {
             $this->log->enableDebug();
         }
-
-        require DIR_WS_CLASSES . 'order.php';
-        require DIR_WS_CLASSES . 'shipping.php';
-        require DIR_WS_CLASSES . 'payment.php';
-        require DIR_WS_CLASSES . 'order_total.php';
     }
+
+    // session flags for:
+    // customer record cleanup
+    // address book cleanup
+
 
     /**
      *
      */
     public function getOrder()
     {
+        require DIR_WS_CLASSES . 'order.php';
+        require DIR_WS_CLASSES . 'shipping.php';
+        require DIR_WS_CLASSES . 'payment.php';
+        require DIR_WS_CLASSES . 'order_total.php';
+
         /**
-         * $data is the form contents from the `cart_quantity` field on
+         * $formdata is the form contents from the `cart_quantity` field on
          * either the product_info (qty, attributes) or shopping_cart page (just qty/delete fields).
          * Also contains `coupon` if on a checkout page and discount coupon code was typed in but not-yet-applied.
          */
@@ -53,7 +58,7 @@ class zcAjaxPaypalRest extends base
 
         $this->log->write('zcAjaxPaypalRest::getOrder data: ' . print_r($formdata, true), true, 'after');
 
-
+// @TODO - no customer yet on product page, for example.
         $customer = new Customer($_SESSION['customer_id']);
         if (zen_get_customer_validate_session($_SESSION['customer_id']) === false) {
             // @TODO - Create a customer here?
@@ -74,9 +79,7 @@ class zcAjaxPaypalRest extends base
         // if no shipping method has been selected, autodetect the cheapest available shipping method
         if (empty($_SESSION['shipping'])) {
             global $shipping_modules;
-            if ($shipping_modules === null) {
-                $shipping_modules = new shipping();
-            }
+            $shipping_modules ??= new shipping();
             $_SESSION['shipping'] = $shipping_modules->cheapest();
         }
 //        $shipping_modules = new shipping($_SESSION['shipping']);
@@ -103,13 +106,13 @@ class zcAjaxPaypalRest extends base
         }
 
         global $order;
-        $order = new order;
-        $order_total_modules = new order_total;
+        $order = new \order();
+        $order_total_modules = new \order_total();
         $order_total_modules->collect_posts();
         $order_total_modules->pre_confirmation_check();
 
         global $payment_modules;
-        $payment_modules = new \payment ('paypalr');
+        $payment_modules = new \payment('paypalr');
         //$this->paypalr = $GLOBALS[$payment_modules->selected_module];
         $payment_modules->update_status();
         if (is_array($payment_modules->modules)) {
@@ -143,14 +146,13 @@ class zcAjaxPaypalRest extends base
         //$paypalOrder = $_SESSION['PayPalRestful']['Order'] ?? null;
 
 
-        global $zco_notifier;
         global $order;
         global $payment_modules;
-        $order = new order;
-        $order_total_modules = new order_total;
-        $payment_modules = new \payment ('paypalr');
+        $order = new \order();
+        $order_total_modules = new \order_total();
+        $payment_modules = new \payment('paypalr');
 
-        $zco_notifier->notify('NOTIFY_HEADER_START_CHECKOUT_PROCESS');
+        $this->notify('NOTIFY_HEADER_START_CHECKOUT_PROCESS');
 
         require DIR_WS_MODULES . zen_get_module_directory('checkout_process.php');
 
@@ -159,14 +161,14 @@ class zcAjaxPaypalRest extends base
         $payment_modules->after_process();
 
 
-        $zco_notifier->notify('NOTIFY_CHECKOUT_PROCESS_BEFORE_CART_RESET', $insert_id);
+        $this->notify('NOTIFY_CHECKOUT_PROCESS_BEFORE_CART_RESET', $insert_id);
         $_SESSION['cart']->reset(true);
 
         // unregister session variables used during checkout
         unset($_SESSION['sendto'], $_SESSION['billto'], $_SESSION['shipping'], $_SESSION['payment'], $_SESSION['comments']);
         $order_total_modules->clear_posts();//ICW ADDED FOR CREDIT CLASS SYSTEM
 
-        $zco_notifier->notify('NOTIFY_HEADER_END_CHECKOUT_PROCESS', $insert_id);
+        $this->notify('NOTIFY_HEADER_END_CHECKOUT_PROCESS', $insert_id);
         return ([
             'order' => null,
             'redirect_page' => zen_href_link(FILENAME_CHECKOUT_SUCCESS, (($_GET['action'] ?? '') === 'confirm' ? 'action=confirm' : 'order_id=' . $insert_id), 'SSL'),

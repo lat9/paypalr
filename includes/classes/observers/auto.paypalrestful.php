@@ -321,7 +321,7 @@ class zcObserverPaypalrestful
         $js_scriptparams[] = 'data-partner-attribution-id="ZenCart_SP_PPCP"';
         $js_scriptparams[] = 'data-namespace="PayPalSDK"';
 
-        ?>
+?>
 <link title="PayPal Cardfields CSS" href="https://www.paypalobjects.com/webstatic/en_US/developer/docs/css/cardfields.css" rel="stylesheet"/>
 <script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> async></script>
 <script title="PayPal page type" id="PayPalPageType">
@@ -330,7 +330,7 @@ class zcObserverPaypalrestful
 <?php
     }
 
-    protected function outputJsFooter($current_page): void
+    protected function outputJsFooter($current_page_base): void
     {
 ?>
 <script title="PayPal Functions">
@@ -340,6 +340,7 @@ class zcObserverPaypalrestful
         [$listings_selector, $message_container, $price_selector, $style, $pageType] = $this->getMessageProps();
 ?>
 <script title="PayPal Messages">
+    // @TODO - output zen_href_link for catalog root (used for checkout_process and for shopping_cart pages)
     jQuery(document).ready(function () {
         // Wait for the JS SDK to load
         jQuery("#PayPalJSSDK").on("load", function () {
@@ -372,7 +373,7 @@ class zcObserverPaypalrestful
             });
 
             // Render any PayPal PayLater messages if an appropriate container exists.
-            if (document.getElementById(msgsContainer)) {
+            if (jQuery(msgsContainer)) {
                 PayPalSDK.Messages({
                     style: msgsStyle,
                     pageType: msgsPageType,
@@ -382,7 +383,7 @@ class zcObserverPaypalrestful
     });
 
 </script>
-        <?php
+<?php
         return;
     }
 

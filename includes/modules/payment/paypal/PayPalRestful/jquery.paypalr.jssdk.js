@@ -43,7 +43,7 @@ jQuery(document).ready(function () {
                     data: data
                 }).done(function (response) {
                     if (response.order.status === 'COMPLETED') {
-                        window.location.href = "<?= zen_href_link(FILENAME_CHECKOUT_PROCESS, '', 'SSL') ?>";
+                        window.location.href = "index.php?main_page=checkout_process";
                     } else {
                         // @TODO - handle INSTRUMENT_DECLINED responses by re-displaying PayPal button which will re-initiate the call but WITH the same previous orderID, so PayPal uses a Retry flow excluding the failed funding source.
                         throw new Error('Payment not completed');
@@ -85,7 +85,7 @@ jQuery(document).ready(function () {
 
             onCancel(data) {
                 // Show a cancel page, or return to cart
-                window.location.assign("/index.php?main_page=shopping_cart");
+                window.location.assign("index.php?main_page=shopping_cart");
             },
 
             // Allow PayPal to query and display whether we can/will ship to the customer's selected address.
@@ -135,7 +135,7 @@ jQuery(document).ready(function () {
         if (ppButtons.hasReturned()) {
             // If using App Switch, the buyer may end up in a new tab depending on the browser; to trigger flow completion, we call resume():
             ppButtons.resume();
-        } else if (document.getElementById("#paypal-buttons-container")) {
+        } else if (jQuery("#paypal-buttons-container")) {
             // If we're on a page where PayPal buttons have a container where checkout buttons should display, render them.
             ppButtons.render("#paypal-buttons-container");
         }
@@ -170,7 +170,7 @@ jQuery(document).ready(function () {
                     data: data
                 }).done(function (response) {
                     if (response.order.status === 'COMPLETED') {
-                        window.location.href = "<?= zen_href_link(FILENAME_CHECKOUT_PROCESS, '', 'SSL') ?>";
+                        window.location.href = "index.php?main_page=checkout_process";
                     } else {
                         // @TODO - handle INSTRUMENT_DECLINED responses by re-displaying PayPal button which will re-initiate the call but WITH the same previous orderID, so PayPal uses a Retry flow excluding the failed funding source.
                         throw new Error('Payment not completed');
