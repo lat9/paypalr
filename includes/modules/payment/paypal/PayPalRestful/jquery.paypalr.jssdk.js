@@ -140,9 +140,6 @@ jQuery(document).ready(function () {
             ppButtons.render("#paypal-buttons-container");
         }
 
-        // Render any PayPal PayLater messages if an appropriate container exists.
-        PayPalSDK.Messages(messageProps).render(messageContainer);
-
         const cardFields = PayPalSDK.CardFields({
             createOrder() {
                 // When customer clicks to start a cardfields checkout, this triggers creation

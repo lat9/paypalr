@@ -332,46 +332,120 @@ class zcObserverPaypalrestful
 
     protected function outputJsFooter($current_page): void
     {
-        $messageProps = $this->getMessageProps();
+?>
+<script title="PayPal Functions">
+<?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk.js'); ?>
+</script>
+<?php
+        [$listings_selector, $message_container, $price_selector, $style, $pageType] = $this->getMessageProps();
+?>
+<script title="PayPal Messages">
+    jQuery(document).ready(function () {
+        // Wait for the JS SDK to load
+        jQuery("#PayPalJSSDK").on("load", function () {
+            // Init paypal pay-later/etc message display
 
-        $message_container = match($current_page) {
-            'product_info' => '.productPriceBottomPrice',
-            FILENAME_SHOPPING_CART => '#paypal-message-container',
-            default => '#paypal-message-container',
-        };
+            let msgsContainer = "<?= $message_container ?>";
+            let msgsStyle = '<?= json_encode($style) ?>';
+            let msgsPageType = "<?= $pageType ?>";
 
-        echo '  <script title="PayPal Functions">';
-        echo '       let messageProps = ' . json_encode($messageProps) . ';' . "\n";
-        echo '       let messageContainer = "' . $message_container . '";' . "\n";
-        echo file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk.js');
-        echo '  </script>' . "\n\n";
+            // Grab all product listings on the page
+            const productListings = Array.from(document.querySelectorAll('<?= $listings_selector ?>'));
+
+            // Loop through each product listing
+            productListings.forEach((listing) => {
+                // Extract the price of the product by grabbing the text content of the
+                // element that contains the price. Use .slice(1) to remove the leading
+                // currency symbol.
+                const price = Number(
+                    listing.querySelector('<?= $price_selector ?>').textContent.slice(1).replace(/,/, '')
+                );
+
+                // Grab child element of this .listing element that has the
+                // pp-message classname
+                const messageElement = listing.querySelector('<?= $message_container ?>');
+
+                // Set data-pp-amount on this element.
+                // The PayPal SDK monitors message elements for changes to its attributes,
+                // so the message is updated automatically to reflect this amount.
+                messageElement.setAttribute('data-pp-amount', price);
+            });
+
+            // Render any PayPal PayLater messages if an appropriate container exists.
+            if (document.getElementById(msgsContainer)) {
+                PayPalSDK.Messages({
+                    style: msgsStyle,
+                    pageType: msgsPageType,
+                }).render(msgsContainer);
+            }
+        });
+    });
+
+</script>
+        <?php
         return;
     }
 
     protected function getMessageProps(): array
     {
         global $current_page_base, $tpl_page_body;
-        return [
-            'style' => [
-                'layout' => 'text',
-                'logo' => [
-                    'type' => 'inline',
-                    'position' => 'top',
-                ],
-                'text' => [
-                    'align' => 'right',
-                ],
-            ],
-            'pageType' => match(true) {
-                str_starts_with($current_page_base, "checkout") => 'checkout',
-                $current_page_base === 'shopping_cart' => 'cart',
-                $current_page_base === 'mini-cart' => 'mini-cart',
-                in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-                ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
-                $current_page_base === 'advanced_search_result' => 'search-results',
-                default => 'home',
-            },
-        ];
+
+        switch ($current_page_base) {
+            case 'product_info':
+                $listings_selector = '#productsPriceBottom-card';
+                $message_container = '.productPriceBottomPrice';
+                $price_selector = '.productBasePrice';
+                $style = [
+                    'layout' => 'text',
+                    'logo' => [
+                        'type' => 'inline',
+                        'position' => 'top',
+                    ],
+                ];
+                break;
+            case FILENAME_SHOPPING_CART:
+                $listings_selector = '#shoppingCartDefault';
+                $message_container = '#paypal-message-container';
+                $price_selector = '#cart-total';
+                $style = [
+                    'layout' => 'text',
+                    'logo' => [
+                        'type' => 'inline',
+                        'position' => 'top',
+                    ],
+                    'text' => [
+                        'align' => 'right',
+                    ],
+                ];
+                break;
+            default:
+                $listings_selector = '#checkout_payment';
+                $message_container = '#paypal-message-container';
+                $price_selector = '#ottotal > .ot-text';
+                $style = [
+                    'layout' => 'text',
+                    'logo' => [
+                        'type' => 'inline',
+                        'position' => 'top',
+                    ],
+                    'text' => [
+                        'align' => 'right',
+                    ],
+                ];
+                break;
+        }
+
+        $pageType = match(true) {
+            str_starts_with($current_page_base, "checkout") => 'checkout',
+            $current_page_base === 'shopping_cart' => 'cart',
+            $current_page_base === 'mini-cart' => 'mini-cart',
+            in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
+            ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
+            $current_page_base === 'advanced_search_result' => 'search-results',
+            default => 'home',
+        };
+
+        return [$listings_selector, $message_container, $price_selector, $style, $pageType];
     }
 
 }
