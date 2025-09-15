@@ -7,7 +7,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.2.0
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -73,29 +73,12 @@ class ConfirmPayPalPaymentChoiceRequest
                     'user_action' => $user_action,  //- PAY_NOW or CONTINUE
                     'return_url' => $listener_endpoint . '?op=return',
                     'cancel_url' => $listener_endpoint . '?op=cancel',
-
-                    // @TODO - this needs to be in the original Order request, and payment_source should be over there too.
-                    //'app_switch_preference' => ['launch_paypal_app' => $this->appSwitchEnabled()],
                 ],
             ],
         ];
 
-        if ($user_action === 'PAY_NOW' && (bool)($GLOBALS['paypalr_app_switch_enabled'] ?? true)) {
-            $this->request['paypal']['experience_context']['app_switch_preference']['launch_paypal_app'] = true;
-            $this->request['paypal']['experience_context']['user_action'] = 'PAY_NOW';
-        }
-
         $logger = new Logger();
         $logger->write("\ConfirmPayPalPaymentChoiceRequest::__construct(...) finished, request:\n" . Logger::logJSON($this->request));
-    }
-
-    /**
-     * NOTE: Duplicated in CreatePayPalOrderRequest.php - keep in sync.
-     */
-    protected function appSwitchEnabled(): bool
-    {
-        $constant_status = (!defined('MODULE_PAYMENT_PAYPALR_APP_SWITCH') || MODULE_PAYMENT_PAYPALR_APP_SWITCH !== 'No');
-        return (bool)($GLOBALS['paypalr_app_switch_enabled'] ?? $constant_status);
     }
 
     public function get(): array

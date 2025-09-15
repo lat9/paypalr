@@ -440,20 +440,6 @@ class paypalr extends base
                             ('Store (Sub-Brand) Identifier at PayPal', 'MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR', '', 'On customer credit card statements, your company name will show as <code>PAYPAL*(yourname)*(your-sub-brand-name)</code> (max 22 letters for (yourname)*(your-sub-brand-name)). You can add the sub-brand-name here if you want to differentiate purchases from this store vs any other PayPal sales you make.', 6, 0, NULL, NULL, now())"
                     );
 
-                    $db->Execute(
-                        "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
-                            (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
-                         VALUES
-                            ('Payment Methods Allowed', 'MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS', 'card, credit, paylater, venmo', 'Which PayPal-supported additional payment methods are you willing to accept?<br><br>Options which you select here will be offered to customers only IF the customer (and your PayPal account) is eligible.<br>Deselected options will never be shown to customers.<br><b>Default: card,credit,paylater,venmo</b>', 6, 0, 'zen_cfg_select_multioption([\'card=Debit/Credit card\', \'credit=PayPal Credit (US, UK)\', \'paylater=Pay Later (US, UK), Pay in 4 (AU), 4X PayPal (France), Später Bezahlen (Germany)\', \'venmo=Venmo\', \'bancontact=Bancontact\', \'blik=BLIK\', \'eps=eps\', \'ideal=iDeal\', \'mercadopago=Mercado Pago\', \'mybank=MyBank\', \'p24=Przelewy24\', \'sepa=SEPA-Lastschrift\'], ', NULL, now())"
-                    );
-
-                    $db->Execute(
-                        "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
-                            (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
-                         VALUES
-                            ('Button Placement', 'MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT', 'Product, Cart', 'In addition to Checkout pages, where else would you like to allow customers to click-to-buy immediately? This may accelerate buying decisions.<br><b>Default: Product, Cart</b>', 6, 0, 'zen_cfg_select_multioption([\'Product\', \'Cart\'], ', NULL, now())"
-                    );
-
                     // -----
                     // Starting with v1.2.0, installing the payment module includes creating
                     // its root-directory listeners/handlers from a copy within the module's
@@ -614,12 +600,12 @@ class paypalr extends base
 
         trigger_error("Setting configuration disabled: $error_message", E_USER_WARNING);
 
-//        $db->Execute(
-//            "UPDATE " . TABLE_CONFIGURATION . "
-//                SET configuration_value = 'False'
-//              WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_STATUS'
-//              LIMIT 1"
-//        );
+        $db->Execute(
+            "UPDATE " . TABLE_CONFIGURATION . "
+                SET configuration_value = 'False'
+              WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_STATUS'
+              LIMIT 1"
+        );
 
         $error_message .= MODULE_PAYMENT_PAYPALR_AUTO_DISABLED;
         if (IS_ADMIN_FLAG === true) {
@@ -868,8 +854,6 @@ class paypalr extends base
                         '<span class="ppr-choice-label">' . MODULE_PAYMENT_PAYPALR_CHOOSE_PAYPAL . '</span>',
                     'field' =>
                         '<div id="paypal-message-container"></div>' .
-                        '<div id="paypal-marks-container"></div>' .
-                        '<div id="paypal-buttons-container"></div>' .
                         '<div id="ppr-choice-paypal" class="ppr-button-choice">' .
                             zen_draw_radio_field('ppr_type', 'paypal', $paypal_selected, 'id="ppr-paypal" class="ppr-choice"') .
                             '<label for="ppr-paypal" class="ppr-choice-label">' .
@@ -1085,12 +1069,6 @@ class paypalr extends base
         $this->log->write('pre_confirmation_check, sending the payer-action off to PayPal.', true, 'after');
         zen_redirect($action_link);
     }
-
-    /**
-     * @TODO - Deprecate this when using JS SDK, since it is all irrelevant then.
-     *
-     * @deprecated since 1.3.0 due to use of PayPal's JS SDK for hosted card fields.
-     */
     protected function validateCardInformation(bool $is_preconfirmation): bool
     {
         global $messageStack, $order;
@@ -2135,10 +2113,6 @@ class paypalr extends base
 
                 ('Enable this Payment Module?', 'MODULE_PAYMENT_PAYPALR_STATUS', 'False', 'Do you want to enable this payment module? Use the <b>Retired</b> setting if you are planning to remove this payment module but still have administrative actions to perform against orders placed with this module.', 6, 0, 'zen_cfg_select_option([\'True\', \'False\', \'Retired\'], ', NULL, now()),
 
-                ('Payment Methods Allowed', 'MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS', 'card,credit,paylater,venmo', 'Which PayPal-supported additional payment methods are you willing to accept?<br><br>Options which you select here will be offered to customers only IF the customer (and your PayPal account) is eligible.<br>Deselected options will never be shown to customers.<br><b>Default: card,credit,paylater,venmo</b>', 6, 0, 'zen_cfg_select_multioption([\'card=Debit/Credit card\', \'credit=PayPal Credit (US, UK)\', \'paylater=Pay Later (US, UK), Pay in 4 (AU), 4X PayPal (France), Später Bezahlen (Germany)\', \'venmo=Venmo\', \'bancontact=Bancontact\', \'blik=BLIK\', \'eps=eps\', \'ideal=iDeal\', \'mercadopago=Mercado Pago\', \'mybank=MyBank\', \'p24=Przelewy24\', \'sepa=SEPA-Lastschrift\'], ', NULL, now()),
-
-                ('Button Placement', 'MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT', 'Product, Cart', 'In addition to Checkout pages, where else would you like to allow customers to click-to-buy immediately? This may accelerate buying decisions.<br><b>Default: Product, Cart</b>', 6, 0, 'zen_cfg_select_multioption([\'Product\', \'Cart\'], ', NULL, now()),
-
                 ('Environment', 'MODULE_PAYMENT_PAYPALR_SERVER', 'live', '<b>Live: </b> Used to process Live transactions<br><b>Sandbox: </b>For developers and testing', 6, 0, 'zen_cfg_select_option([\'live\', \'sandbox\'], ', NULL, now()),
 
                 ('Client ID (live)', 'MODULE_PAYMENT_PAYPALR_CLIENTID_L', '', 'The <em>Client ID</em> from your PayPal API Signature settings under *API Access* for your <b>live</b> site. Required if using the <b>live</b> environment.', 6, 0, NULL, 'zen_cfg_password_display', now()),
@@ -2288,8 +2262,6 @@ class paypalr extends base
             'MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE',
             'MODULE_PAYMENT_PAYPALR_SCA_ALWAYS',
             'MODULE_PAYMENT_PAYPALR_ACCEPT_CARDS',
-            'MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS',
-            'MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT',
             'MODULE_PAYMENT_PAYPALR_SORT_ORDER',
             'MODULE_PAYMENT_PAYPALR_ZONE',
             'MODULE_PAYMENT_PAYPALR_SERVER',

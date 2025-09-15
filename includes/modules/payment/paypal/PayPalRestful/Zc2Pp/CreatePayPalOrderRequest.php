@@ -6,7 +6,7 @@
  * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.3.0
+ * Last updated: v1.2.0
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -44,8 +44,8 @@ class CreatePayPalOrderRequest extends ErrorInfo
     protected array $request;
 
     /**
-     * The items' pricing 'breakdown' elements, gathered by getItems and
-     * subsequently used by getOrderTotals.
+     * The items' pricing 'breakdown' elements, gathered by getItems
+     * and subsequently used by getOrderTotals.
      */
     protected array $itemBreakdown = [
         'item_onetime_charges' => 0.0,
@@ -468,16 +468,10 @@ class CreatePayPalOrderRequest extends ErrorInfo
             ],
             'email_address' => $order->customer['email_address'],
             'address' => Address::get($order->billing),
-            'experience_context' => [
-                'app_switch_preference' => ['launch_paypal_app' => $this->appSwitchEnabled()],
-            ],
         ];
         return $payment_source;
     }
 
-    /**
-     * @TODO - either deprecate, or rework this to work with Hosted CardFields instead.
-     */
     protected function buildCardPaymentSource(\order $order, array $cc_info): array
     {
         $payment_source = [
@@ -489,8 +483,6 @@ class CreatePayPalOrderRequest extends ErrorInfo
             'experience_context' => [
                 'return_url' => $cc_info['redirect'] . '?op=3ds_return',
                 'cancel_url' => $cc_info['redirect'] . '?op=3ds_cancel',
-
-                'app_switch_preference' => ['launch_paypal_app' => $this->appSwitchEnabled()],
             ],
         ];
         if (isset($_POST['ppr_cc_sca_always']) || (defined('MODULE_PAYMENT_PAYPALR_SCA_ALWAYS') && MODULE_PAYMENT_PAYPALR_SCA_ALWAYS === 'true')) {
@@ -543,14 +535,5 @@ class CreatePayPalOrderRequest extends ErrorInfo
             $supplementary_data['card']['level_3'] = $level_3;
         }
         return $supplementary_data;
-    }
-
-    /**
-     * NOTE: Duplicated in ConfirmPayPalPaymentChoiceRequest.php - keep in sync.
-     */
-    protected function appSwitchEnabled(): bool
-    {
-        $constant_status = (!defined('MODULE_PAYMENT_PAYPALR_APP_SWITCH') || MODULE_PAYMENT_PAYPALR_APP_SWITCH !== 'No');
-        return (bool)($GLOBALS['paypalr_app_switch_enabled'] ?? $constant_status);
     }
 }

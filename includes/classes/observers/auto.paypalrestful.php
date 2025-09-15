@@ -275,7 +275,7 @@ class zcObserverPaypalrestful
         }
 
         // possible components: buttons,marks,messages,funding-eligibility,hosted-fields,card-fields,applepay
-        $js_fields['components'] = 'buttons,marks,messages,card-fields,funding-eligibility';
+        $js_fields['components'] = 'messages,funding-eligibility';
 
         // commit value is a boolean string; 'true' = pay-now, 'false'=continue to final confirmation
         $confirmation_pages = [FILENAME_CHECKOUT_CONFIRMATION];
@@ -292,29 +292,32 @@ class zcObserverPaypalrestful
 //            $js_fields['intent'] = 'AUTHORIZE'; // default is 'CAPTURE', so we only set intent in cases where we want to override that
         }
 
-        // filter MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS to specify which ones the merchant has opted to disable
-        $potentialMethods = ['card', 'credit', 'paylater', 'venmo', 'bancontact', 'blik', 'eps', 'ideal', 'mercadopago', 'mybank', 'p24', 'sepa'];
-        $enabledMethods = array_map(static fn($value) => strstr($value, '=', true) ?: $value, explode(', ', MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS));
-        $disabledMethods = [];
-        foreach ($potentialMethods as $value) {
-            if (!in_array($value, $enabledMethods, true)) {
-                $disabledMethods[] = $value;
+        if (defined('MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS')) {
+            // filter MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS to specify which ones the merchant has opted to disable
+            $potentialMethods = ['card', 'credit', 'paylater', 'venmo', 'bancontact', 'blik', 'eps', 'ideal', 'mercadopago', 'mybank', 'p24', 'sepa'];
+            $enabledMethods = array_map(static fn($value) => strstr($value, '=', true) ?: $value, explode(', ', MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS));
+            $disabledMethods = [];
+            foreach ($potentialMethods as $value) {
+                if (!in_array($value, $enabledMethods, true)) {
+                    $disabledMethods[] = $value;
+                }
             }
+            $js_fields['disable-funding'] = implode(',', $disabledMethods);
         }
-        $js_fields['disable-funding'] = implode(',', $disabledMethods);
 
-        // ---
-        $js_page_type = match (true) {
-            str_starts_with($current_page, "checkout") => 'checkout',
-            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'shopping_cart' => 'cart',
-            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'mini-cart' => 'mini-cart',
-            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Product') && in_array($current_page, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Listing') && ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
-            str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Search') && $current_page === 'advanced_search_result' => 'search-results',
-            default => null,
-        };
-        if ($js_page_type) {
-            $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
+        if (defined('MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT')) {
+            $js_page_type = match (true) {
+                str_starts_with($current_page, "checkout") => 'checkout',
+                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'shopping_cart' => 'cart',
+                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'mini-cart' => 'mini-cart',
+                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Product') && in_array($current_page, zen_get_buyable_product_type_handlers(), true) => 'product-details',
+                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Listing') && ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
+                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Search') && $current_page === 'advanced_search_result' => 'search-results',
+                default => null,
+            };
+            if ($js_page_type) {
+                $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
+            }
         }
 
         $js_fields['integration-date'] = '2025-08-01';
@@ -333,122 +336,30 @@ class zcObserverPaypalrestful
     protected function outputJsFooter($current_page_base): void
     {
 ?>
-<script title="PayPal Functions">
-<?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk.js'); ?>
-</script>
-<?php
-        [$listings_selector, $message_container, $price_selector, $style, $pageType] = $this->getMessageProps();
-?>
 <script title="PayPal Messages">
-    // @TODO - output zen_href_link for catalog root (used for checkout_process and for shopping_cart pages)
-    jQuery(document).ready(function () {
-        // Wait for the JS SDK to load
-        jQuery("#PayPalJSSDK").on("load", function () {
-            // Init paypal pay-later/etc message display
-
-            let msgsContainer = "<?= $message_container ?>";
-            let msgsStyle = '<?= json_encode($style) ?>';
-            let msgsPageType = "<?= $pageType ?>";
-
-            // Grab all product listings on the page
-            const productListings = Array.from(document.querySelectorAll('<?= $listings_selector ?>'));
-
-            // Loop through each product listing
-            productListings.forEach((listing) => {
-                // Extract the price of the product by grabbing the text content of the
-                // element that contains the price. Use .slice(1) to remove the leading
-                // currency symbol.
-                const price = Number(
-                    listing.querySelector('<?= $price_selector ?>').textContent.slice(1).replace(/,/, '')
-                );
-
-                // Grab child element of this .listing element that has the
-                // pp-message classname
-                const messageElement = listing.querySelector('<?= $message_container ?>');
-
-                // Set data-pp-amount on this element.
-                // The PayPal SDK monitors message elements for changes to its attributes,
-                // so the message is updated automatically to reflect this amount.
-                messageElement.setAttribute('data-pp-amount', price);
-            });
-
-            // Render any PayPal PayLater messages if an appropriate container exists.
-            if (jQuery(msgsContainer)) {
-                PayPalSDK.Messages({
-                    style: msgsStyle,
-                    pageType: msgsPageType,
-                }).render(msgsContainer);
-            }
-        });
-    });
-
+// PayPal PayLater messaging set up
+let paypalMessagesPageType = '<?= $this->getMessagesPageType() ?>';
+<?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
 </script>
 <?php
         return;
     }
 
-    protected function getMessageProps(): array
+    protected function getMessagesPageType(): string
     {
-        global $current_page_base, $tpl_page_body;
+        global $current_page_base, $tpl_page_body, $this_is_home_page;
 
-        switch ($current_page_base) {
-            case 'product_info':
-                $listings_selector = '#productsPriceBottom-card';
-                $message_container = '.productPriceBottomPrice';
-                $price_selector = '.productBasePrice';
-                $style = [
-                    'layout' => 'text',
-                    'logo' => [
-                        'type' => 'inline',
-                        'position' => 'top',
-                    ],
-                ];
-                break;
-            case FILENAME_SHOPPING_CART:
-                $listings_selector = '#shoppingCartDefault';
-                $message_container = '#paypal-message-container';
-                $price_selector = '#cart-total';
-                $style = [
-                    'layout' => 'text',
-                    'logo' => [
-                        'type' => 'inline',
-                        'position' => 'top',
-                    ],
-                    'text' => [
-                        'align' => 'right',
-                    ],
-                ];
-                break;
-            default:
-                $listings_selector = '#checkout_payment';
-                $message_container = '#paypal-message-container';
-                $price_selector = '#ottotal > .ot-text';
-                $style = [
-                    'layout' => 'text',
-                    'logo' => [
-                        'type' => 'inline',
-                        'position' => 'top',
-                    ],
-                    'text' => [
-                        'align' => 'right',
-                    ],
-                ];
-                break;
-        }
-
-        $pageType = match(true) {
+        return match(true) {
             str_starts_with($current_page_base, "checkout") => 'checkout',
             $current_page_base === 'shopping_cart' => 'cart',
             $current_page_base === 'mini-cart' => 'mini-cart',
             in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
             ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
             $current_page_base === 'advanced_search_result' => 'search-results',
-            default => 'home',
+            $this_is_home_page => 'home',
+            default => 'other',
         };
-
-        return [$listings_selector, $message_container, $price_selector, $style, $pageType];
     }
-
 }
 
 
