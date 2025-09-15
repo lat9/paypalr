@@ -1,68 +1,86 @@
 // PayPal PayLater messaging
-let payLaterStyles = {"layout":"text","logo":{"type":"inline","position":"top"},"text":{"align":"center"}};
 if (!paypalMessagesPageType.length) {
-    paypalMessagesPageType = "other";
+    paypalMessagesPageType = "None";
 }
+let payLaterStyles = {"layout":"text","logo":{"type":"inline","position":"top"},"text":{"align":"center"}};
+
 jQuery(document).ready(function () {
     // Wait for the JS SDK to load
     jQuery("#PayPalJSSDK").on("load", function () {
 
         // Possible placements for PayLater messaging;
-        //  container is what we search for,
-        //  price is where the price is found,
-        //  outputElement is what element for PayPal SDK to add pricing display into
-        //  styleAlign can be left, center, right
-        
+        //  pageType is the page to which the rest of the details apply in this object; relates to paypalr config switch MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING
+        //  container is what containing element we will search in,
+        //  price is the element inside container where the price is found,
+        //  outputElement is what element we want the PayPal SDK to add pricing display into
+        //  styleAlign can be left, center, right. Controls placement in outputElement.
+
         let $messagableObjects = [
             {
+                pageType: "product-details",
                 container: "#productsPriceBottom-card",
                 price: ".productBasePrice",
                 outputElement: ".productPriceBottomPrice",
                 styleAlign: ""
             },
             {
+                pageType: "product-details",
                 container: ".add-to-cart-Y",
                 price: ".productBasePrice",
                 outputElement: "#productPrices",
                 styleAlign: ""
             },
             {
+                pageType: "product-details",
                 container: ".pl-dp",
                 price: ".productBasePrice",
                 outputElement: ".pl-dp",
                 styleAlign: ""
             },
             {
+                pageType: "product-listing",
                 container: ".list-price",
                 price: ".productBasePrice",
                 outputElement: ".list-price",
                 styleAlign: ""
             },
             {
+                pageType: "search-results",
+                container: ".list-price",
+                price: ".productBasePrice",
+                outputElement: ".list-price",
+                styleAlign: ""
+            },
+            {
+                pageType: "cart",
                 container: "#shoppingCartDefault",
                 price: "#cart-total",
                 outputElement: "#paypal-message-container",
                 styleAlign: "right"
             },
             {
+                pageType: "cart",
                 container: "#shoppingCartDefault-cartTableDisplay",
                 price: "#cartTotal",
                 outputElement: "#cartTotal",
                 styleAlign: "right"
             },
             {
+                pageType: "cart",
                 container: "#shoppingCartDefault",
                 price: "#cartSubTotal",
                 outputElement: "#cartSubTotal",
                 styleAlign: "right"
             },
             {
+                pageType: "checkout",
                 container: "#checkout_payment",
                 price: "#ottotal > .ot-text",
                 outputElement: "#paypal-message-container",
                 styleAlign: "right"
             },
             {
+                pageType: "checkout",
                 container: "#checkoutOrderTotals",
                 price: "#ottotal > .totalBox",
                 outputElement: "#checkoutOrderTotals",
@@ -76,17 +94,22 @@ jQuery(document).ready(function () {
         jQuery.each($messagableObjects, function(index, current) {
             if (shouldBreak) return false; // break outer loop
 
+            if (paypalMessagesPageType !== current.pageType) {
+                // not for this page, so skip
+                return true;
+            }
+
             let $output = jQuery(current.outputElement);
 
             if (!$output.length) {
                 console.info("Loop " + index + ": " + current.outputElement + ' not found, continuing');
-                // not found; iterate to next group
+                // outputElement not found on this page; try to find in next group
                 return true;
             }
             let $findInContainer = jQuery(current.container);
             if (!$findInContainer.length) {
                 console.info("Loop " + index + ": " + current.container + ' not found, continuing');
-                // not found; iterate to next group
+                // Container in which to search for price was not found; try next group
                 return true;
             }
 

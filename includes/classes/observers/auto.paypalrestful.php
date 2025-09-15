@@ -349,15 +349,19 @@ let paypalMessagesPageType = '<?= $this->getMessagesPageType() ?>';
     {
         global $current_page_base, $tpl_page_body, $this_is_home_page;
 
+        $limit = defined('MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING') ? MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING : 'All';
+        $limit = explode(', ', $limit);
+
         return match(true) {
-            str_starts_with($current_page_base, "checkout") => 'checkout',
-            $current_page_base === 'shopping_cart' => 'cart',
-            $current_page_base === 'mini-cart' => 'mini-cart',
-            in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-            ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
-            $current_page_base === 'advanced_search_result' => 'search-results',
-            $this_is_home_page => 'home',
-            default => 'other',
+            !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout") => 'checkout',
+            !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart' => 'cart',
+            !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart' => 'mini-cart', // @TODO this is more for a header box
+            !empty(array_intersect($limit, ['All', 'Product Pages'])) && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
+            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
+            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && $current_page_base === 'advanced_search_result' => 'search-results',
+            !empty($limit) && $this_is_home_page => 'home',
+            !empty($limit) => 'other',
+            default => 'None',
         };
     }
 }
