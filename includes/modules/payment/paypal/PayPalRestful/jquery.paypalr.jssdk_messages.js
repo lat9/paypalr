@@ -1,4 +1,5 @@
 // PayPal PayLater messaging
+// Last updated: v1.3.0
 if (!paypalMessagesPageType.length) {
     paypalMessagesPageType = "None";
 }
@@ -13,9 +14,17 @@ jQuery(document).ready(function () {
         //  container is what containing element we will search in,
         //  price is the element inside container where the price is found,
         //  outputElement is what element we want the PayPal SDK to add pricing display into
+        //    NOTE: where a duplicate occurs with #paypal-message-container first, that's to allow overriding by adding said element to the template where desired
         //  styleAlign can be left, center, right. Controls placement in outputElement.
 
         let $messagableObjects = [
+            {
+                pageType: "product-details",
+                container: "#productsPriceBottom-card",
+                price: ".productBasePrice",
+                outputElement: "#paypal-message-container",
+                styleAlign: ""
+            },
             {
                 pageType: "product-details",
                 container: "#productsPriceBottom-card",
@@ -32,6 +41,13 @@ jQuery(document).ready(function () {
             },
             {
                 pageType: "product-details",
+                container: ".add-to-cart-Y",
+                price: ".productBasePrice",
+                outputElement: "#paypal-message-container",
+                styleAlign: ""
+            },
+            {
+                pageType: "product-listing",
                 container: ".pl-dp",
                 price: ".productBasePrice",
                 outputElement: ".pl-dp",
@@ -42,6 +58,13 @@ jQuery(document).ready(function () {
                 container: ".list-price",
                 price: ".productBasePrice",
                 outputElement: ".list-price",
+                styleAlign: ""
+            },
+            {
+                pageType: "search-results",
+                container: ".pl-dp",
+                price: ".productBasePrice",
+                outputElement: ".pl-dp",
                 styleAlign: ""
             },
             {
@@ -78,6 +101,27 @@ jQuery(document).ready(function () {
                 price: "#ottotal > .ot-text",
                 outputElement: "#paypal-message-container",
                 styleAlign: "right"
+            },
+            {
+                pageType: "checkout",
+                container: "#checkoutPayment",
+                price: "#ottotal > .ot-text",
+                outputElement: "#paypal-message-container",
+                styleAlign: "left"
+            },
+            {
+                pageType: "checkout",
+                container: "#checkoutPayment",
+                price: "#ottotal > .ot-text",
+                outputElement: "#yourTotal-card",
+                styleAlign: "right"
+            },
+            {
+                pageType: "checkout",
+                container: "#checkoutOrderTotals",
+                price: "#ottotal > .totalBox",
+                outputElement: "#paypal-message-container",
+                styleAlign: ""
             },
             {
                 pageType: "checkout",

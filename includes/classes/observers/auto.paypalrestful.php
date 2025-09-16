@@ -72,7 +72,8 @@ class zcObserverPaypalrestful
 
         // -----
         // Attach to header to render JS SDK assets.
-        $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN', 'NOTIFY_HTML_HEAD_END']);
+        $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN']); // NOTE: this might come too early to detect pageType properly
+        $this->attach($this, ['NOTIFY_HTML_HEAD_END']);
         // Attach to footer to instantiate the JS.
         $this->attach($this, ['NOTIFY_FOOTER_END']);
     }
@@ -275,61 +276,21 @@ class zcObserverPaypalrestful
         }
 
         // possible components: buttons,marks,messages,funding-eligibility,hosted-fields,card-fields,applepay
-        $js_fields['components'] = 'messages,funding-eligibility';
+        $js_fields['components'] = 'messages';
 
-        // commit value is a boolean string; 'true' = pay-now, 'false'=continue to final confirmation
-        $confirmation_pages = [FILENAME_CHECKOUT_CONFIRMATION];
-        if (defined('FILENAME_CHECKOUT_ONE_CONFIRMATION')) {
-            $confirmation_pages[] = FILENAME_CHECKOUT_ONE_CONFIRMATION;
-        }
-        if (in_array($current_page, $confirmation_pages, true)) {
-            $js_fields['commit'] = 'true'; // pay-now
-        } else {
-            $js_fields['commit'] = 'false'; // will confirm on subsequent page
-        }
+        $js_page_type = $this->getMessagesPageType();
 
-        if (str_starts_with(MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE, 'Auth')) {
-//            $js_fields['intent'] = 'AUTHORIZE'; // default is 'CAPTURE', so we only set intent in cases where we want to override that
-        }
-
-        if (defined('MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS')) {
-            // filter MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS to specify which ones the merchant has opted to disable
-            $potentialMethods = ['card', 'credit', 'paylater', 'venmo', 'bancontact', 'blik', 'eps', 'ideal', 'mercadopago', 'mybank', 'p24', 'sepa'];
-            $enabledMethods = array_map(static fn($value) => strstr($value, '=', true) ?: $value, explode(', ', MODULE_PAYMENT_PAYPALR_ALLOWED_METHODS));
-            $disabledMethods = [];
-            foreach ($potentialMethods as $value) {
-                if (!in_array($value, $enabledMethods, true)) {
-                    $disabledMethods[] = $value;
-                }
-            }
-            $js_fields['disable-funding'] = implode(',', $disabledMethods);
-        }
-
-        if (defined('MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT')) {
-            $js_page_type = match (true) {
-                str_starts_with($current_page, "checkout") => 'checkout',
-                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'shopping_cart' => 'cart',
-                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page === 'mini-cart' => 'mini-cart',
-                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Product') && in_array($current_page, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Listing') && ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
-                str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Search') && $current_page === 'advanced_search_result' => 'search-results',
-                default => null,
-            };
-            if ($js_page_type) {
-                $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
-            }
+        if (!empty($js_page_type) && !in_array($js_page_type, ['home', 'other'], true)) {
+            $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
         }
 
         $js_fields['integration-date'] = '2025-08-01';
         $js_scriptparams[] = 'data-partner-attribution-id="ZenCart_SP_PPCP"';
         $js_scriptparams[] = 'data-namespace="PayPalSDK"';
-
 ?>
-<link title="PayPal Cardfields CSS" href="https://www.paypalobjects.com/webstatic/en_US/developer/docs/css/cardfields.css" rel="stylesheet"/>
+
 <script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> async></script>
-<script title="PayPal page type" id="PayPalPageType">
-    window.paypalPageType = '<?= $js_page_type ?? 'other' ?>';
-</script>
+
 <?php
     }
 
@@ -347,7 +308,7 @@ let paypalMessagesPageType = '<?= $this->getMessagesPageType() ?>';
 
     protected function getMessagesPageType(): string
     {
-        global $current_page_base, $tpl_page_body, $this_is_home_page;
+        global $current_page_base, $this_is_home_page, $category_depth, $tpl_page_body;
 
         $limit = defined('MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING') ? MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING : 'All';
         $limit = explode(', ', $limit);
@@ -355,10 +316,10 @@ let paypalMessagesPageType = '<?= $this->getMessagesPageType() ?>';
         return match(true) {
             !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout") => 'checkout',
             !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart' => 'cart',
-            !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart' => 'mini-cart', // @TODO this is more for a header box
+            //!empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart' => 'mini-cart', // @TODO this is more for a header box
             !empty(array_intersect($limit, ['All', 'Product Pages'])) && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($tpl_page_body ?? null) === 'tpl_index_product_list.php' => 'product-listing',
-            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && $current_page_base === 'advanced_search_result' => 'search-results',
+            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($category_depth === 'products' || ($tpl_page_body ?? null) === 'tpl_index_product_list.php') => 'product-listing',
+            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && str_ends_with($current_page_base, 'search_result') => 'search-results',
             !empty($limit) && $this_is_home_page => 'home',
             !empty($limit) => 'other',
             default => 'None',
