@@ -1,7 +1,7 @@
 <?php
 /**
  * Part of the paypalr (PayPal Restful Api) payment module.
- * This observer-class handles the JS SDK integration logic.
+ * This observer class handles the JS SDK integration logic.
  * It also watches for notifications from the 'order_total' class,
  * introduced in this (https://github.com/zencart/zencart/pull/6090) Zen Cart PR,
  * to determine an order's overall value and what amounts each order-total
@@ -251,7 +251,7 @@ class zcObserverPaypalrestful
 
     protected function outputJsSdkHeaderAssets($current_page): void
     {
-        global $current_page_base, $order, $tpl_page_body, $paypalSandboxBuyerCountryCodeOverride, $paypalSandboxLocaleOverride;
+        global $current_page_base, $order, $paypalSandboxBuyerCountryCodeOverride, $paypalSandboxLocaleOverride;
         if (empty($current_page)) {
             $current_page = $current_page_base;
         }
