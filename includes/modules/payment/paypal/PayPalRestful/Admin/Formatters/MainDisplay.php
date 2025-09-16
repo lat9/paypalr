@@ -246,11 +246,11 @@ class MainDisplay
                     break;
 
                 case 'AUTHORIZE':
-                    [$action_buttons, $modals] = $this->createAuthButtonsAndModals($txn_index, $main_txn_id, $days_to_settle);
+                    list($action_buttons, $modals) = $this->createAuthButtonsAndModals($txn_index, $main_txn_id, $days_to_settle);
                     break;
 
                 case 'CAPTURE':
-                    [$action_buttons, $modals] = $this->createCaptureButtonsAndModals($txn_index);
+                    list($action_buttons, $modals) = $this->createCaptureButtonsAndModals($txn_index);
                     break;
 
                 case 'REFUND':

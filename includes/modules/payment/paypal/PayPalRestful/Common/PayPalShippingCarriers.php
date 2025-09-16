@@ -24,7 +24,7 @@ class PayPalShippingCarriers
             if (empty($line)) {
                 continue;
             }
-            [$name, $code, $country] = explode(',', trim($line));
+            list($name, $code, $country) = explode(',', trim($line));
             if ($code === 'OTHER') {
                 continue;
             }
@@ -88,7 +88,7 @@ class PayPalShippingCarriers
             if (empty($line)) {
                 continue;
             }
-            [$name, $code, $country] = explode(',', trim($line));
+            list($name, $code, $country) = explode(',', trim($line));
             if ($code === 'OTHER') {
                 continue;
             }
