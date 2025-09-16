@@ -21,10 +21,10 @@ class zcObserverPaypalrestful
 {
     use ObserverManager;
 
-    protected array $lastOrderValues = [];
-    protected array $orderTotalChanges = [];
-    protected bool $freeShippingCoupon = false;
-    protected bool $headerAssetsSent = false;
+    protected $lastOrderValues = [];
+    protected $orderTotalChanges = [];
+    protected $freeShippingCoupon = false;
+    protected $headerAssetsSent = false;
 
     public function __construct()
     {
@@ -74,6 +74,7 @@ class zcObserverPaypalrestful
         // Attach to header to render JS SDK assets.
         $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN']); // NOTE: this might come too early to detect pageType properly
         $this->attach($this, ['NOTIFY_HTML_HEAD_END']);
+
         // Attach to footer to instantiate the JS.
         $this->attach($this, ['NOTIFY_FOOTER_END']);
     }
