@@ -334,6 +334,31 @@ let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageS
         return;
     }
 
+    protected function getButtonsPageType(): string
+    {
+        global $current_page_base, $this_is_home_page, $category_depth, $tpl_page_body;
+
+        if (!defined('MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT')) {
+            return 'None';
+        }
+
+        switch (true) {
+            case str_starts_with($current_page_base, "checkout"):
+                return 'checkout';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page_base === 'shopping_cart':
+                return 'cart';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page_base === 'mini-cart':
+                return 'mini-cart';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Product') && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true):
+                return 'product-details';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Listing') && $category_depth === 'products':
+                return 'product-listing';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Search') && str_ends_with($current_page_base, 'search_result'):
+                return 'search-results';
+            default:
+                return 'None';
+        }
+    }
     protected function getMessagesPageType(): string
     {
         global $current_page_base, $this_is_home_page, $category_depth, $tpl_page_body;
@@ -341,17 +366,26 @@ let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageS
         $limit = defined('MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING') ? MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING : 'All';
         $limit = explode(', ', $limit);
 
-        return match(true) {
-            !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout") => 'checkout',
-            !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart' => 'cart',
-            //!empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart' => 'mini-cart', // @TODO this is more for a header box
-            !empty(array_intersect($limit, ['All', 'Product Pages'])) && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($category_depth === 'products' || ($tpl_page_body ?? null) === 'tpl_index_product_list.php') => 'product-listing',
-            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && str_ends_with($current_page_base, 'search_result') => 'search-results',
-            !empty($limit) && $this_is_home_page => 'home',
-            !empty($limit) => 'other',
-            default => 'None',
-        };
+        switch (true) {
+            case !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout"):
+                return 'checkout';
+            case !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart':
+                return 'cart';
+            case !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart':
+                return 'mini-cart';
+            case !empty(array_intersect($limit, ['All', 'Product Pages'])) && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true):
+                return 'product-details';
+            case !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($category_depth === 'products' || ($tpl_page_body ?? null) === 'tpl_index_product_list.php'):
+                return 'product-listing';
+            case !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && str_ends_with($current_page_base, 'search_result'):
+                return 'search-results';
+            case !empty($limit) && $this_is_home_page:
+                return 'home';
+            case !empty($limit):
+                return 'other';
+            default:
+                return 'None';
+        }
     }
 }
 
