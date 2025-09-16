@@ -21,7 +21,7 @@ class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
         'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A problem occurred after the buyer approved the order but before you captured the payment.
         // https://developer.paypal.com/docs/api/orders/v2/

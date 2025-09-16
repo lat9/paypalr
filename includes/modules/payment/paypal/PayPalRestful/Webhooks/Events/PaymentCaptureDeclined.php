@@ -20,7 +20,7 @@ class PaymentCaptureDeclined extends WebhookHandlerContract
         'PAYMENT.CAPTURE.DECLINED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A payment capture is declined.
         // https://developer.paypal.com/docs/api/payments/v2/#authorizations_capture - with response `status` of `declined`

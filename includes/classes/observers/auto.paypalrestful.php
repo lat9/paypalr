@@ -113,7 +113,7 @@ class zcObserverPaypalrestful
         $this->freeShippingCoupon = in_array($coupon_type, ['S', 'E', 'O']);
     }
 
-    public function updateNotifyHtmlHeadEnd(&$class, $eventID, $current_page_base): void
+    public function updateNotifyHtmlHeadEnd(&$class, $eventID, $current_page_base)
     {
         // This is a fallback for older versions, to ensure we only output the header JS once.
         if ($this->headerAssetsSent) {
@@ -121,12 +121,12 @@ class zcObserverPaypalrestful
         }
         $this->outputJsSdkHeaderAssets($current_page_base);
     }
-    public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base): void
+    public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base)
     {
         $this->outputJsSdkHeaderAssets($current_page_base);
         $this->headerAssetsSent = true;
     }
-    public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base): void
+    public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base)
     {
         $this->outputJsFooter($current_page_base);
     }
@@ -250,7 +250,7 @@ class zcObserverPaypalrestful
 
     /** Internal methods **/
 
-    protected function outputJsSdkHeaderAssets($current_page): void
+    protected function outputJsSdkHeaderAssets($current_page)
     {
         global $current_page_base, $order, $paypalSandboxBuyerCountryCodeOverride, $paypalSandboxLocaleOverride;
         if (empty($current_page)) {
@@ -295,7 +295,7 @@ class zcObserverPaypalrestful
 <?php
     }
 
-    protected function outputJsFooter($current_page_base): void
+    protected function outputJsFooter($current_page_base)
     {
         $containingElement = null;
         $priceSelector = null;

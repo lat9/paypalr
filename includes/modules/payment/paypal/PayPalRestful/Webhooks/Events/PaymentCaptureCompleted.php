@@ -20,7 +20,7 @@ class PaymentCaptureCompleted extends WebhookHandlerContract
         'PAYMENT.CAPTURE.COMPLETED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A payment capture completes
         // https://developer.paypal.com/docs/api/payments/v2/#authorizations_capture - with response `status` of `completed`

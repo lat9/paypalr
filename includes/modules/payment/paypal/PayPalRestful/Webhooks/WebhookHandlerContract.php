@@ -38,12 +38,12 @@ abstract class WebhookHandlerContract
         $this->log = new Logger();
     }
 
-    abstract public function action(): void;
+    abstract public function action();
 
     /**
      * Instantiate paypalr payment module, including its language string dependencies.
      */
-    protected function loadCorePaymentModuleAndLanguageStrings(): void
+    protected function loadCorePaymentModuleAndLanguageStrings()
     {
         require DIR_WS_CLASSES . 'payment.php';
         $payment_modules = new \payment ('paypalr');

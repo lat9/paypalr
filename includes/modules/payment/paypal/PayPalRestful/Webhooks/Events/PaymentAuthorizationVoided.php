@@ -20,7 +20,7 @@ class PaymentAuthorizationVoided extends WebhookHandlerContract
         'PAYMENT.AUTHORIZATION.VOIDED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A payment authorization is voided either due to authorization
         // reaching its 30-day validity period or authorization was

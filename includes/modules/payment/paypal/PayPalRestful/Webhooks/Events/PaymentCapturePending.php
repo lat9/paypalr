@@ -20,7 +20,7 @@ class PaymentCapturePending extends WebhookHandlerContract
         'PAYMENT.CAPTURE.PENDING',
     ];
 
-    public function action(): void
+    public function action()
     {
         // The state of a payment capture changes to pending
         // https://developer.paypal.com/docs/api/payments/v2/#authorizations_get - Show details for authorized payment with response `status` of `pending`.

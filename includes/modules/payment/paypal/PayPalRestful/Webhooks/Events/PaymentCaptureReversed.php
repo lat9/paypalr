@@ -20,7 +20,7 @@ class PaymentCaptureReversed extends WebhookHandlerContract
         'PAYMENT.CAPTURE.REVERSED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // PayPal reverses a payment capture (not the merchant)
         // https://developer.paypal.com/docs/api/payments/v2/#captures_refund

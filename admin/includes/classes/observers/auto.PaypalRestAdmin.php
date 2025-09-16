@@ -41,7 +41,7 @@ class zcObserverPaypalRestAdmin
     /**
      * @param array $data [int orders_id, int orders_status_id, date_added, int customer_notified, comments, updated_by]
      */
-    public function updateZenUpdateOrdersHistoryBeforeInsert(&$class, $eventID, $null, array $data): void
+    public function updateZenUpdateOrdersHistoryBeforeInsert(&$class, $eventID, $null, array $data)
     {
         $this->updateZenUpdateOrdersHistoryAfterInsert($class, $eventID, 0, $data);
         $this->detach($this, ['ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT']);
@@ -51,7 +51,7 @@ class zcObserverPaypalRestAdmin
     /**
      * @param array $data [int orders_id, int orders_status_id, date_added, int customer_notified, comments, updated_by]
      */
-    public function updateZenUpdateOrdersHistoryAfterInsert(&$class, $eventID, int $osh_id, array $data): void
+    public function updateZenUpdateOrdersHistoryAfterInsert(&$class, $eventID, int $osh_id, array $data)
     {
         if ($this->adminBeforeInsertDone) {
             // avoid double-processing when attached to an older version's ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT

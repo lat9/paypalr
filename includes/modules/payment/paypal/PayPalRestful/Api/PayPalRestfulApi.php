@@ -12,7 +12,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Api;
 
@@ -457,7 +457,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * Submit API call to register the webhooks we are able to listen for
      */
-    public function subscribeWebhook(): void
+    public function subscribeWebhook()
     {
         if (empty($this->webhooksToRegister)) {
             return;
@@ -529,7 +529,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * Ensure the webhooks we want to listen for are all registered
      */
-    public function registerAndUpdateSubscribedWebhooks(): void
+    public function registerAndUpdateSubscribedWebhooks()
     {
         $webhook_id = defined('MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS') ? MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS : '';
 
@@ -600,7 +600,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * When uninstalling this module, we should cleanup the webhook subscription record, so PayPal stops sending notifications.
      */
-    public function unsubscribeWebhooks(): void
+    public function unsubscribeWebhooks()
     {
         $this->log->write("==> Start deleteWebhook Registration", true);
         $url = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_webhook.php';

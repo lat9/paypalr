@@ -81,7 +81,7 @@ class WebhookObject
     /**
      * @param array $metadata
      */
-    public function setMetadata(array $metadata): void
+    public function setMetadata(array $metadata)
     {
         $this->metadata = $metadata;
     }
@@ -91,7 +91,7 @@ class WebhookObject
      *
      * @param array $metadata
      */
-    public function addMetadata(array $metadata): void
+    public function addMetadata(array $metadata)
     {
         $this->metadata += $metadata;
     }

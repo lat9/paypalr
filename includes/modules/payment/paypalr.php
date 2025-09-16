@@ -2243,7 +2243,7 @@ class paypalr extends base
         $this->notify('NOTIFY_PAYMENT_PAYPALR_INSTALLED');
     }
 
-    protected function manageRootDirectoryFiles(): void
+    protected function manageRootDirectoryFiles()
     {
         // -----
         // Starting with v1.2.0, installing the payment module includes creating

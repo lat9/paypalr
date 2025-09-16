@@ -20,7 +20,7 @@ class PaymentCaptureRefunded extends WebhookHandlerContract
         'PAYMENT.CAPTURE.REFUNDED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A merchant refunds a payment capture.
         // https://developer.paypal.com/docs/api/payments/v2/#authorizations_capture - Show details for authorized payment with response `status` of `refunded`.
