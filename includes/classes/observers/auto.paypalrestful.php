@@ -275,12 +275,12 @@ class zcObserverPaypalrestful
             $js_fields['currency'] = $amount->getDefaultCurrencyCode();
         }
 
-        // possible components: buttons,marks,messages,funding-eligibility,hosted-fields,card-fields,applepay
+        // possible components for future SDK integration: buttons,marks,messages,funding-eligibility,hosted-fields,card-fields,applepay
         $js_fields['components'] = 'messages';
 
         $js_page_type = $this->getMessagesPageType();
 
-        if (!empty($js_page_type) && !in_array($js_page_type, ['home', 'other'], true)) {
+        if (!empty($js_page_type) && !in_array($js_page_type, ['home', 'other', 'None'], true)) {
             $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
         }
 
@@ -296,10 +296,38 @@ class zcObserverPaypalrestful
 
     protected function outputJsFooter($current_page_base): void
     {
+        $containingElement = null;
+        $priceSelector = null;
+        $outputElement = null;
+        $messageStyles = [
+            "layout" => "text",
+            "logo" => [
+                "type" => "inline",
+                "position" => "top"
+            ],
+            "text" => [
+                "align" => "center"
+            ]
+        ];
+        $pageType = $this->getMessagesPageType();
+        $this->notify('NOTIFY_PAYPAL_PAYLATER_SELECTORS', ['current_page_base' => $current_page_base, 'pageType' => $pageType], $containingElement, $priceSelector, $outputElement, $messageStyles);
+
+        $override = null;
+        if (!empty($containingElement) && !empty($priceSelector) && !empty($outputElement)) {
+            $override = [
+                'pageType' => $pageType,
+                'container' => $containingElement,
+                'price' => $priceSelector,
+                'outputElement' => $outputElement,
+                'styleAlign' => $messageStyles['text']['align'] ?? 'center',
+            ];
+        }
 ?>
-<script title="PayPal Messages">
+<script title="PayPal Pay Later Messaging">
 // PayPal PayLater messaging set up
-let paypalMessagesPageType = '<?= $this->getMessagesPageType() ?>';
+let paypalMessagesPageType = '<?= $pageType ?>';
+let paypalMessageableOverride = <?= $override ? json_encode($override) : '{}' ?>;
+let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles) : '{}' ?>;
 <?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
 </script>
 <?php
