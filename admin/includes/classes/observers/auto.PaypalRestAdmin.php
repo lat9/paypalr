@@ -102,6 +102,7 @@ class zcObserverPaypalRestAdmin
 }
 
 if (!function_exists('zen_get_zcversion')) {
+    /** @since ZC v1.5.7 */
     function zen_get_zcversion()
     {
         return PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;

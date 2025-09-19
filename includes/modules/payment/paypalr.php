@@ -2346,3 +2346,35 @@ class paypalr extends base
         return self::CURRENT_VERSION;
     }
 }
+
+if (!function_exists('zen_in_guest_checkout')) {
+    /** @since ZC v1.5.6 */
+    function zen_in_guest_checkout(): bool
+    {
+        global $zco_notifier;
+        $in_guest_checkout = false;
+        $zco_notifier->notify('NOTIFY_ZEN_IN_GUEST_CHECKOUT', null, $in_guest_checkout);
+        return (bool)$in_guest_checkout;
+    }
+}
+
+if (!function_exists('zen_cfg_select_multioption_pairs')) {
+    /** @since ZC v2.2.0 */
+    function zen_cfg_select_multioption_pairs(array $choices_array, string $stored_value, string $config_key_name = ''): string
+    {
+        $string = '';
+        $name = (($config_key_name) ? 'configuration[' . $config_key_name . '][]' : 'configuration_value');
+        $chosen_already = explode(", ", $stored_value);
+        foreach ($choices_array as $value) {
+            // Account for cases where an = sign is used to allow key->value pairs where the value is friendly display text
+            $beforeEquals = strstr($value, '=', true);
+            // this entry's checkbox should be pre-selected if the key matches
+            $ticked = (in_array($value, $chosen_already, true) || in_array($beforeEquals, $chosen_already, true));
+            // determine the value to show (the part after the =; if no =, just the whole string)
+            $display_value = strpos($value, '=') !== false ? explode('=', $value, 2)[1] : $value;
+            $string .= '<div class="checkbox"><label>' . zen_draw_checkbox_field($name, $value, $ticked, 'id="' . strtolower($value . '-' . $name) . '"') . $display_value . '</label></div>' . "\n";
+        }
+        $string .= zen_draw_hidden_field($name, '--none--');
+        return $string;
+    }
+}

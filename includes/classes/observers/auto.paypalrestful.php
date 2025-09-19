@@ -401,6 +401,7 @@ if (!function_exists('zen_get_buyable_product_type_handlers')) {
      * Get a list of product page names that identify buyable products.
      * This allows us to mark a page as containing a product which can
      * be allowed to add-to-cart or buy-now with various modules.
+     * @since ZC v2.2.0
      */
     function zen_get_buyable_product_type_handlers(): array
     {

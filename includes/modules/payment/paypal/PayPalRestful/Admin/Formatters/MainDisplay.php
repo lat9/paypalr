@@ -731,7 +731,7 @@ class MainDisplay
 
     protected function createModalButtons(string $submit_button_id, string $toggle_button_name, string $submit_button_name): string
     {
-        zen_define_default('TEXT_PLEASE_WAIT', 'Please wait ...');
+        defined('TEXT_PLEASE_WAIT') || define('TEXT_PLEASE_WAIT', 'Please wait ...');
         return
             '<div class="btn-group btn-group-justified ppr-button-row">
                 <div class="btn-group">
