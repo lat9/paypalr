@@ -91,7 +91,7 @@ table table {
 
 <body>
     <h1>PayPal RESTful Payment Module (<var>paypalr</var>) for Zen Cart 1.5.8a and later</h1>
-    <h3>Version 1.2.1</h3>
+    <h3>Version 1.3.0</h3>
     <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/forumdisplay.php?170-PayPal-RESTful-support" target="_blank">https://www.zen-cart.com/forumdisplay.php?170-PayPal-RESTful-support</a></p>
     <p>Zen Cart Download Link: <a href="https://www.zen-cart.com/downloads.php?do=file&id=2382" target="_blank">https://www.zen-cart.com/downloads.php?do=file&id=2382</a></p>
     <p>GitHub repository: <a href="https://github.com/lat9/paypalr" target="_blank">https://github.com/lat9/paypalr</a></p>
@@ -102,7 +102,7 @@ table table {
     <ol>
         <li>With PHP versions 7.4 through 8.4; <b>PHP 7.3 will result in fatal PHP errors!</b></li>
         <li>In Zen Cart's 3-page checkout environment (v1.5.8<b>a</b>, v2.0.x and v2.1.0)</li>
-        <li>With <a href="https://www.zen-cart.com/downloads.php?do=file&id=2095" target="_blank">One-Page Checkout</a> (OPC), v2.4.6-2.5.3<ol type="a">
+        <li>With <a href="https://www.zen-cart.com/downloads.php?do=file&id=2095" target="_blank">One-Page Checkout</a> (OPC), v2.4.6-2.5.5<ol type="a">
             <li>Using <em>OPC</em>'s guest-checkout feature.</li>
             <li>Both requiring confirmation and not!</li>
         </ol></li>
@@ -132,6 +132,7 @@ table table {
             <li>/includes/modules/payment/paypal/pprAutoload.php</li>
             <li>/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.checkout.js</li>
             <li>/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.disable.js</li>
+            <li>/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js <span class="smaller">(Added in v1.3.0)</span></li>
             <li>/includes/modules/payment/paypal/PayPalRestful/paypalr.admin.css</li>
             <li>/includes/modules/payment/paypal/PayPalRestful/paypalr_bootstrap.css</li>
             <li>/includes/modules/payment/paypal/PayPalRestful/paypalr.css</li>
@@ -186,6 +187,15 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
+        <li>v1.3.0-alpha1, 2025-09-19 (lat9, drbyte)<ul>
+            <li>CHANGE: Integrate PayPal's PayLater Messaging via PayPal JS SDK.</li>
+            <li>The following files were changed or <span class="added">added</span>:<ol>
+                <li>/includes/classes/observers/auto.paypalrestful.php</li>
+                <li>/includes/modules/payment/paypalr.php</li>
+                <li><span class="added">/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</span></li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/CreatePayPalOrderRequest.php</li>
+            </ol></li>
+        </ul></li>
         <li>v1.2.1, 2025-09-05 (lat9, drbyte)<ul>
             <li>BUGFIX: Can't remove module if it's disabled or credentials aren't set.</li>
             <li>BUGFIX: Root-directory files not copied on an upgrade from a previous version.</li>
