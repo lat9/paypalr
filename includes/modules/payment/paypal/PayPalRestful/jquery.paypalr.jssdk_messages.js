@@ -161,11 +161,17 @@ jQuery(document).ready(function () {
             // each container is either a product, or a cart/checkout div that contains another element containing a price
             jQuery.each($findInContainer, function (i, element) {
                 console.info("Msgs Loop " + index + ": " + current.outputElement + " found on page, and " + current.container + " element found. Extracting price from " + current.price);
-                // Extract the price of the product by grabbing the text content of the
-                // element that contains the price. Use .slice(1) to remove the leading
-                // currency symbol, and replace() any commas (thousands-separators).
+
+                // Extract the price of the product by grabbing the text content of the element that contains the price.
+                // @TODO: could try to parse for numeric data, or split "words" out of it in case the price is prefixed with text
+                let priceElement = element.querySelector(current.price);
+                if (!priceElement) {
+                    console.info("Msgs Loop " + index + ": priceElement is empty. Skipping.");
+                    return true;
+                }
+                // Use .slice(1) to remove the leading currency symbol, and replace() any commas (thousands-separators).
                 const price = Number(
-                    element.querySelector(current.price).textContent.slice(1).replace(/,/, '')
+                    priceElement.textContent.slice(1).replace(/,/, '')
                 );
                 console.info("Msgs Loop " + index + ": " + 'Price ' + price + "; will try to set in " + current.outputElement)
 
@@ -174,8 +180,8 @@ jQuery(document).ready(function () {
                 // so the message is updated automatically to reflect this amount in whatever messaging PayPal displays.
                 $output.attr('data-pp-amount', price.toString());
 
-                $paypalHasMessageObjects = true;
                 $paypalMessagesOutputContainer = current.outputElement;
+                $paypalHasMessageObjects = true;
 
                 if (current.styleAlign.length) {
                     payLaterStyles.text.align = current.styleAlign;

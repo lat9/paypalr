@@ -432,6 +432,7 @@ class paypalr extends base
                             ('Trigger 3D Secure on <b>Every</b> Txn?', 'MODULE_PAYMENT_PAYPALR_SCA_ALWAYS', 'false', 'Choose <var>true</var> to trigger 3D Secure for <b>every</b> transaction, regardless of SCA requirements.<br><br><b>Default</b>: <var>false</var>', 6, 0, 'zen_cfg_select_option([\'true\', \'false\'], ', NULL, now())"
                     );
 
+                /* falls through */
                 case version_compare(MODULE_PAYMENT_PAYPALR_VERSION, '1.2.0', '<'): //- Fall through from above
                     $db->Execute(
                         "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
@@ -440,12 +441,13 @@ class paypalr extends base
                             ('Store (Sub-Brand) Identifier at PayPal', 'MODULE_PAYMENT_PAYPALR_SOFT_DESCRIPTOR', '', 'On customer credit card statements, your company name will show as <code>PAYPAL*(yourname)*(your-sub-brand-name)</code> (max 22 letters for (yourname)*(your-sub-brand-name)). You can add the sub-brand-name here if you want to differentiate purchases from this store vs any other PayPal sales you make.', 6, 0, NULL, NULL, now())"
                     );
 
+                /* falls through */
                 case version_compare(MODULE_PAYMENT_PAYPALR_VERSION, '1.3.0', '<'): //- Fall through from above
                     $db->Execute(
                         "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
                             (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
                          VALUES
-                            ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages, Product Listings and Search Results', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br><b>Default: All</b>', 6, 0, 'zen_cfg_select_multioption([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now())"
+                            ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available. Only available in USD, GBP, EUR, AUD.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br>To disable, leave all unticked.', 6, 0, 'zen_cfg_select_multioption([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now())"
                     );
 
                     // -----
@@ -455,7 +457,8 @@ class paypalr extends base
                     //
                     $this->manageRootDirectoryFiles();
 
-                default:    //- Fall through from above
+                /* falls through */
+                default:
                     break;
             }
         }
@@ -2121,7 +2124,7 @@ class paypalr extends base
 
                 ('Enable this Payment Module?', 'MODULE_PAYMENT_PAYPALR_STATUS', 'False', 'Do you want to enable this payment module? Use the <b>Retired</b> setting if you are planning to remove this payment module but still have administrative actions to perform against orders placed with this module.', 6, 0, 'zen_cfg_select_option([\'True\', \'False\', \'Retired\'], ', NULL, now()),
 
-                ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages, Product Listings and Search Results', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br><b>Default: All</b>', 6, 0, 'zen_cfg_select_multioption([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now()),
+                ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available. Only available in USD, GBP, EUR, AUD.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br>To disable, leave all unticked.', 6, 0, 'zen_cfg_select_multioption([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now()),
 
                 ('Environment', 'MODULE_PAYMENT_PAYPALR_SERVER', 'live', '<b>Live: </b> Used to process Live transactions<br><b>Sandbox: </b>For developers and testing', 6, 0, 'zen_cfg_select_option([\'live\', \'sandbox\'], ', NULL, now()),
 
