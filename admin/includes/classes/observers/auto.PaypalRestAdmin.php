@@ -3,20 +3,17 @@
  * Part of the paypalr (PayPal Restful Api) payment module.
  * Admin handles package tracking updates.
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 use PayPalRestful\Api\Data\CountryCodes;
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Zc2Pp\Amount;
-use Zencart\Traits\ObserverManager;
 
 require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
-class zcObserverPaypalRestAdmin
+class zcObserverPaypalRestAdmin extends base
 {
-    use ObserverManager;
-
     protected bool $adminBeforeInsertDone = false;
 
     public function __construct()

@@ -13,14 +13,11 @@
 use PayPalRestful\Api\Data\CountryCodes;
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Zc2Pp\Amount;
-use Zencart\Traits\ObserverManager;
 
 require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
-class zcObserverPaypalrestful
+class zcObserverPaypalrestful extends base
 {
-    use ObserverManager;
-
     protected $lastOrderValues = [];
     protected $orderTotalChanges = [];
     protected $freeShippingCoupon = false;
