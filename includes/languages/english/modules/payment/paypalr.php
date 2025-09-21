@@ -8,6 +8,8 @@ if (zen_get_zcversion() >= '1.5.8') {
     return;
 }
 
+global $template_dir;
+
 $lang_filename = 'lang.paypalr.php';
 $languages_dir = DIR_FS_CATALOG . DIR_WS_LANGUAGES;
 $lang_file_locations[] = $languages_dir . 'english/modules/payment/' . $lang_filename;
