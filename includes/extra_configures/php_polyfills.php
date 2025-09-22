@@ -42,7 +42,7 @@ if (\PHP_VERSION_ID >= 80500) {
 }
 
 if (!function_exists('get_error_handler')) {
-    function get_error_handler(): ?callable
+    function get_error_handler()
     {
         $handler = set_error_handler(null);
         restore_error_handler();
@@ -52,7 +52,7 @@ if (!function_exists('get_error_handler')) {
 }
 
 if (!function_exists('get_exception_handler')) {
-    function get_exception_handler(): ?callable
+    function get_exception_handler()
     {
         $handler = set_exception_handler(null);
         restore_exception_handler();
@@ -96,7 +96,7 @@ if ((defined('CURL_VERSION_HTTP3') || PHP_VERSION_ID < 80200) && function_exists
 
 if (extension_loaded('bcmath')) {
     if (!function_exists('bcdivmod')) {
-        function bcdivmod(string $num1, string $num2, ?int $scale = null): ?array
+        function bcdivmod(string $num1, string $num2, $scale = null)
         {
             if (null === $quot = \bcdiv($num1, $num2, 0)) {
                 return null;
@@ -168,7 +168,7 @@ if (!function_exists('fpow')) {
 }
 
 if (!function_exists('mb_ucfirst') && function_exists('mb_substr')) {
-    function mb_ucfirst(string $string, ?string $encoding = null): string
+    function mb_ucfirst(string $string, $encoding = null): string
     {
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
@@ -188,7 +188,7 @@ if (!function_exists('mb_ucfirst') && function_exists('mb_substr')) {
 }
 
 if (!function_exists('mb_lcfirst') && function_exists('mb_substr')) {
-    function mb_lcfirst(string $string, ?string $encoding = null): string
+    function mb_lcfirst(string $string, $encoding = null): string
     {
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
@@ -209,7 +209,7 @@ if (!function_exists('mb_lcfirst') && function_exists('mb_substr')) {
 
 if (!function_exists('mb_internal_trim') && !function_exists('mb_trim') && function_exists('mb_convert_encoding')) {
     /** Polyfill helper function, not to be called directly */
-    function mb_internal_trim(string $regex, string $string, ?string $characters, ?string $encoding, string $function): string
+    function mb_internal_trim(string $regex, string $string, $characters, $encoding, string $function): string
     {
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
@@ -252,21 +252,21 @@ if (!function_exists('mb_internal_trim') && !function_exists('mb_trim') && funct
 }
 
 if (!function_exists('mb_trim')) {
-    function mb_trim(string $string, ?string $characters = null, ?string $encoding = null): string
+    function mb_trim(string $string, $characters = null, $encoding = null): string
     {
         return mb_internal_trim('{^[%s]+|[%1$s]+$}Du', $string, $characters, $encoding, __FUNCTION__);
     }
 }
 
 if (!function_exists('mb_ltrim')) {
-    function mb_ltrim(string $string, ?string $characters = null, ?string $encoding = null): string
+    function mb_ltrim(string $string, $characters = null, $encoding = null): string
     {
         return mb_internal_trim('{^[%s]+}Du', $string, $characters, $encoding, __FUNCTION__);
     }
 }
 
 if (!function_exists('mb_rtrim')) {
-    function mb_rtrim(string $string, ?string $characters = null, ?string $encoding = null): string
+    function mb_rtrim(string $string, $characters = null, $encoding = null): string
     {
         return mb_internal_trim('{[%s]+$}Du', $string, $characters, $encoding, __FUNCTION__);
     }
@@ -327,7 +327,7 @@ if (!function_exists('json_validate')) {
 }
 
 if (!function_exists('mb_str_pad') && function_exists('mb_substr') && function_exists('mb_strlen')) {
-    function mb_str_pad(string $string, int $length, string $pad_string = ' ', int $pad_type = \STR_PAD_RIGHT, ?string $encoding = null): string
+    function mb_str_pad(string $string, int $length, string $pad_string = ' ', int $pad_type = \STR_PAD_RIGHT, $encoding = null): string
     {
         if (!\in_array($pad_type, [\STR_PAD_RIGHT, \STR_PAD_LEFT, \STR_PAD_BOTH], true)) {
             throw new \ValueError('mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH');
