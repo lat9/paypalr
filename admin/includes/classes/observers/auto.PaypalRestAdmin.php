@@ -14,7 +14,7 @@ require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
 class zcObserverPaypalRestAdmin extends base
 {
-    protected bool $adminBeforeInsertDone = false;
+    protected $adminBeforeInsertDone = false;
 
     public function __construct()
     {
