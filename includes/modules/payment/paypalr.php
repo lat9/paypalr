@@ -33,9 +33,9 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    protected const CURRENT_VERSION = '1.3.0-alpha';
+    const CURRENT_VERSION = '1.3.0-alpha';
 
-    protected const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
+    const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
     /**
      * name of this module
@@ -571,7 +571,7 @@ class paypalr extends base
         //
         // Determine which (live vs. sandbox) credentials are in use.
         //
-        [$client_id, $secret] = self::getEnvironmentInfo();
+        list($client_id, $secret) = self::getEnvironmentInfo();
 
         // -----
         // Ensure that the current environment's credentials are set and, if so,

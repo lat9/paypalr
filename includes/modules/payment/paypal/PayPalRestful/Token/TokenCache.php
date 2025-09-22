@@ -19,7 +19,7 @@ class TokenCache
     // Constants used to encrypt the session-based copy of the access-token.  Used by
     // the getSavedToken/saveToken methods.
     //
-    private const ENCRYPT_ALGO = 'AES-256-CBC';
+    const ENCRYPT_ALGO = 'AES-256-CBC';
 
     // -----
     // Variable that holds the selected cryptographic algorithm and its IV length.
