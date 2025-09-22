@@ -42,28 +42,28 @@ class paypalr extends base
      *
      * @var string
      */
-    public string $code;
+    public $code;
 
     /**
      * displayed module title
      *
      * @var string
      */
-    public string $title;
+    public $title;
 
     /**
      * displayed module description
      *
      * @var string
      */
-    public string $description = '';
+    public $description = '';
 
     /**
      * module status - set based on various config and zone criteria
      *
      * @var boolean
      */
-    public bool $enabled;
+    public $enabled;
 
     /**
      * Installation 'check' flag
@@ -77,14 +77,14 @@ class paypalr extends base
      *
      * @var int
      */
-    public int $zone;
+    public $zone;
 
     /**
      * debugging flags
      *
      * @var boolean
      */
-    protected bool $emailAlerts;
+    protected $emailAlerts;
 
     /**
      * sort order of display
@@ -98,7 +98,7 @@ class paypalr extends base
      *
     * @var int
      */
-    public int $order_status;
+    public $order_status;
 
     /**
      * URLs used during checkout if this is the selected payment method
@@ -123,43 +123,43 @@ class paypalr extends base
     /**
      * Debug interface, shared with the PayPalRestfulApi class.
      */
-    protected Logger $log; //- An instance of the Logger class, logs debug tracing information.
+    protected $log; //- An instance of the Logger class, logs debug tracing information.
 
     /**
      * An array to maintain error information returned by various PayPalRestfulApi methods.
      */
-    protected ErrorInfo $errorInfo; //- An instance of the ErrorInfo class, logs debug tracing information.
+    protected $errorInfo; //- An instance of the ErrorInfo class, logs debug tracing information.
 
     /**
      * An instance of the PayPalRestfulApi class.
      */
-    protected PayPalRestfulApi $ppr;
+    protected $ppr;
 
     /**
      * An array (set by before_process) containing the captured/authorized order's
      * PayPal response information, for use by after_order_create to populate the
      * paypal table's record once the associated order's ID is known.
      */
-    protected array $orderInfo = [];
+    protected $orderInfo = [];
 
     /**
      * An array (set by validateCardInformation) containing the card-related information
      * to be sent to PayPal for a 'card' transaction.
      */
-    private array $ccInfo = [];
+    private $ccInfo = [];
 
     /**
      * Indicates whether/not credit-card payments are to be accepted during storefront
      * processing and, if so, an array that maps a credit-card's name to its associated
      * image.
      */
-    protected bool $cardsAccepted = false;
-    protected array $cardImages = [];
+    protected $cardsAccepted = false;
+    protected $cardImages = [];
 
     /**
      * Indicates whether/not an otherwise approved payment is pending review.
      */
-    protected bool $paymentIsPending = false;
+    protected $paymentIsPending = false;
 
     /**
      * Indicates whether/not we're on the One-Page-Checkout confirmation page.  Possibly
@@ -169,16 +169,16 @@ class paypalr extends base
      * It'll be needed if this payment method is configured by OPC to 'not need' confirmation
      * so that we can fake out the before/after session-check.
      */
-    protected bool $onOpcConfirmationPage = false;
-    protected array $paypalRestfulSessionOnEntry = [];
+    protected $onOpcConfirmationPage = false;
+    protected $paypalRestfulSessionOnEntry = [];
 
     /**
      * A couple of flags (used by the 'selection' method) which are set by the
      * class-constuctor to indicate whether/not the storefront's currently active billing/shipping
      * addresses are associated with countries not supported by PayPal.
      */
-    protected bool $billingCountryIsSupported = true;
-    protected bool $shippingCountryIsSupported = true;
+    protected $billingCountryIsSupported = true;
+    protected $shippingCountryIsSupported = true;
 
     /**
      * class constructor

@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Webhooks;
 
@@ -17,9 +17,9 @@ use PayPalRestful\Api\PayPalRestfulApi;
 
 class WebhookResponder
 {
-    protected bool $shouldRespond = false;
+    protected $shouldRespond = false;
 
-    protected string|null $webhook_listener_subscribe_id = null;
+    protected $webhook_listener_subscribe_id = null;
 
     public function __construct(protected WebhookObject $webhook) {
         $this->setWebhookSubscribeId();

@@ -7,7 +7,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Webhooks;
@@ -17,17 +17,16 @@ use PayPalRestful\Common\Logger;
 
 abstract class WebhookHandlerContract
 {
-    protected array $eventsHandled = [];
+    protected $eventsHandled = [];
 
-    protected WebhookObject $webhook;
-    protected array $data;
-    protected string $eventType;
+    protected $webhook;
+    protected $data;
+    protected $eventType;
 
-    protected Logger $log;
+    protected $log;
 
-    protected PayPalRestfulApi $ppr;
-    protected \paypalr $paymentModule;
-
+    protected $ppr;
+    protected $paymentModule;
 
     public function __construct(WebhookObject $webhook)
     {

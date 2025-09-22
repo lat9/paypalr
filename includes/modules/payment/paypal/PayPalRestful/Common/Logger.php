@@ -5,7 +5,7 @@
  * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Common;
@@ -20,8 +20,8 @@ class Logger
      * @debugLogFile string
      * @debug bool
      */
-    protected static bool $debug = false;
-    protected static string $debugLogFile;
+    protected static $debug = false;
+    protected static $debugLogFile;
 
     // -----
     // Class constructor.
@@ -29,6 +29,7 @@ class Logger
     public function __construct(string $uniqueName = '')
     {
         global $current_page_base;
+
         // -----
         // Using the same log-file name for each page-load.
         // If it's already set, simply return.

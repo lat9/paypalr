@@ -6,7 +6,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Webhooks\Events;
@@ -16,7 +16,7 @@ use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class PaymentCaptureDeclined extends WebhookHandlerContract
 {
-    protected array $eventsHandled = [
+    protected $eventsHandled = [
         'PAYMENT.CAPTURE.DECLINED',
     ];
 

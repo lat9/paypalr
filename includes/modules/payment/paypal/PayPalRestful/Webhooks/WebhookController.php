@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Webhooks;
@@ -18,10 +18,10 @@ use PayPalRestful\Common\Logger;
 
 class WebhookController
 {
-    protected bool $enableDebugFileLogging = true;
-    protected Logger $ppr_logger;
+    protected $enableDebugFileLogging = true;
+    protected $ppr_logger;
 
-    public function __invoke(): bool|null
+    public function __invoke()
     {
         defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
 

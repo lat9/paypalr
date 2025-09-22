@@ -5,6 +5,8 @@
  * @copyright Copyright 2023 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
+ *
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Token;
@@ -23,14 +25,14 @@ class TokenCache
     // Variable that holds the selected cryptographic algorithm and its IV length.
     // Set during construction.
     //
-    private string $encryptionAlgorithm;
-    private int $encryptionAlgoIvLen;
-    private string $clientSecret;
+    private $encryptionAlgorithm;
+    private $encryptionAlgoIvLen;
+    private $clientSecret;
 
     // -----
     // Contains an instance of the common Logger class.
     //
-    protected Logger $log;
+    protected $log;
 
     public function __construct(string $client_secret)
     {

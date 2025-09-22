@@ -65,7 +65,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * Webhook actions we intend to listen for notifications regarding.
      */
-    protected array $webhooksToRegister = [
+    protected $webhooksToRegister = [
         'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
         'PAYMENT.AUTHORIZATION.VOIDED',
         'PAYMENT.CAPTURE.COMPLETED',
@@ -80,25 +80,25 @@ class PayPalRestfulApi extends ErrorInfo
      *
      * @log Logger object, logs debug tracing information.
      */
-    protected Logger $log;
+    protected $log;
 
     /**
      * Variables associated with interface logging;
      *
      * @token TokenCache object, caches any access-token retrieved from PayPal.
      */
-    protected TokenCache $tokenCache;
+    protected $tokenCache;
 
     /**
      * Sandbox or production? Set during class construction.
      */
-    protected string $endpoint;
+    protected $endpoint;
 
     /**
      * OAuth client id and secret, set during class construction.
      */
-    private string $clientId;
-    private string $clientSecret;
+    private $clientId;
+    private $clientSecret;
 
     /**
      * The CURL channel, initialized during construction.
@@ -109,7 +109,7 @@ class PayPalRestfulApi extends ErrorInfo
      * Options for cURL. Defaults to preferred (constant) options.  Used by
      * the curlGet and curlPost methods.
      */
-    protected array $curlOptions = [
+    protected $curlOptions = [
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_FOLLOWLOCATION => false,
         CURLOPT_FORBID_REUSE => true,
@@ -125,20 +125,20 @@ class PayPalRestfulApi extends ErrorInfo
      * (the default).  See https://developer.paypal.com/api/rest/requests/#http-request-headers
      * for additional information.
      */
-    protected string $paypalRequestId = '';
+    protected $paypalRequestId = '';
 
     /**
      * Contains an (optional) "Mock Response" to be included in the HTTP
      * header's PayPal-Mock-Response value, enabling testing to be performed
      * for error responses; see the above link for additional information.
      */
-    protected string $paypalMockResponse = '';
+    protected $paypalMockResponse = '';
 
     /**
      * A binary flag that indicates whether/not the caller wants to keep the 'links' returned
      * by the various PayPal responses.
      */
-    protected bool $keepTxnLinks = false;
+    protected $keepTxnLinks = false;
 
     // -----
     // Class constructor, saves endpoint (live vs. sandbox), clientId and clientSecret
@@ -363,8 +363,8 @@ class PayPalRestfulApi extends ErrorInfo
         string $tracking_number,
         string $carrier_code,
         string $action = 'ADD',
-        bool $email_buyer = false,
-    ): false|array {
+        bool $email_buyer = false
+    ) {
         $this->log->write("==> Start updatePackageTracking($paypal_txnid, " . Logger::logJSON($tracking_number) . ", $carrier_code, $action ...)\n", true);
 
         if (empty($tracking_number)) {
@@ -585,7 +585,7 @@ class PayPalRestfulApi extends ErrorInfo
         $response = $this->curlPatch("v1/notifications/webhooks/$webhook_id", [$parameters]);
     }
 
-    public function webhookVerifyByPostback($parameters): bool|null
+    public function webhookVerifyByPostback($parameters)
     {
         $this->log->write("==> Start webhookVerifyByPostback", true);
         $response = $this->curlPost('v1/notifications/verify-webhook-signature', $parameters);
