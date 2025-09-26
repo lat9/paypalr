@@ -20,8 +20,11 @@ class WebhookResponder
     protected $shouldRespond = false;
 
     protected $webhook_listener_subscribe_id = null;
+    protected $webhook;
 
-    public function __construct(protected WebhookObject $webhook) {
+    public function __construct(WebhookObject $webhook) {
+        $this->webhook = $webhook;
+
         $this->setWebhookSubscribeId();
     }
 
@@ -44,7 +47,7 @@ class WebhookResponder
         return $this->shouldRespond;
     }
 
-    public function verify(): bool|null
+    public function verify()
     {
         if ($this->shouldRespond !== true) {
             return null;
@@ -72,7 +75,7 @@ class WebhookResponder
     /**
      * @return bool|null  returns null if we cannot do CRC check, so fails over to PostBack approach
      */
-    protected function doCrcCheck(): bool|null
+    protected function doCrcCheck()
     {
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
 
@@ -97,7 +100,7 @@ class WebhookResponder
     /**
      * @return bool|null  returns null if unable to use CURL or if the access token is invalid.
      */
-    protected function verifyByPostback(): bool|null
+    protected function verifyByPostback()
     {
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
         $params_array = [

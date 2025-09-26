@@ -14,16 +14,21 @@ namespace PayPalRestful\Webhooks;
 
 class WebhookObject
 {
-    protected array $jsonBody = [];
+    protected $jsonBody = [];
+    protected $method; // request method
+    protected $headers; // request headers
+    protected $rawBody = ''; // request body, unaltered
+    protected $userAgent = ''; // request User Agent
+    protected $metadata = []; // optional misc meta info
 
-    public function __construct(
-        protected string $method, // request method
-        protected array $headers, // request headers
-        protected string $rawBody = '', // request body, unaltered
-        protected string $userAgent = '', // request User Agent
-        protected array $metadata = [], // optional misc meta info
-    )
+    public function __construct(string $method, array $headers, string $rawBody = '', string $userAgent = '', array $metadata = [])
     {
+        $this->method = $method;
+        $this->headers = $headers;
+        $this->rawBody = $rawBody;
+        $this->userAgent = $userAgent;
+        $this->metadata = $metadata;
+
         if (empty($this->rawBody)) {
             return;
         }

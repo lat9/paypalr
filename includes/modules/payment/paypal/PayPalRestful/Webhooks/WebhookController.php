@@ -118,7 +118,7 @@ class WebhookController
     /**
      * Save webhook records to database for subsequent querying
      */
-    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, string|array $request_headers)
+    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, $request_headers)
     {
         $json_body = json_decode($request_body, true);
 
