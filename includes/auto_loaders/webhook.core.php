@@ -1,11 +1,11 @@
 <?php
-
 /**
  * autoloader array for webhooks
  *
  * @copyright Copyright 2003-2025 Zen Cart Development Team
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version  New in v2.2.0 $
+ *
+ * Last updated: v1.2.2
  */
 if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
@@ -15,7 +15,13 @@ $autoLoadConfig[0][] = [
     'autoType' => 'include',
     'loadFile' => DIR_WS_INCLUDES . 'version.php',
 ];
-//- notifier class loaded via psr4Autoload.php
+//- notifier class loaded via psr4Autoload.php; reloading
+//- here for older versions of Zen Cart that don't load the
+//- class via an autoloader.
+$autoLoadConfig[0][] = [
+    'autoType' => 'class',
+    'loadFile' => 'class.notifier.php',
+];
 $autoLoadConfig[0][] = [
     'autoType' => 'classInstantiate',
     'className' => 'notifier',
@@ -24,18 +30,6 @@ $autoLoadConfig[0][] = [
 $autoLoadConfig[0][] = [
     'autoType' => 'class',
     'loadFile' => 'class.phpmailer.php',
-];
-/**
- * Breakpoint 5.
- *
- * $zcDate = new zcDate(); ... will be re-initialized when/if the require_languages.php module is run.
- *
- */
-//- zcDate class loaded via psr4Autoload.php
-$autoLoadConfig[5][] = [
-    'autoType' => 'classInstantiate',
-    'className' => 'zcDate',
-    'objectName' => 'zcDate',
 ];
 /**
  * Breakpoint 30.
@@ -58,17 +52,13 @@ $autoLoadConfig[40][] = [
     'autoType' => 'init_script',
     'loadFile' => 'init_db_config_read.php',
 ];
-/**
- * Breakpoint 45.
- *
- * require 'includes/init_includes/init_non_db_settings.php';
- *
- */
-$autoLoadConfig[45][] = [
-    'autoType' => 'init_script',
-    'loadFile' => 'init_non_db_settings.php',
+//- sniffer class loaded via psr4Autoload.php; reloading
+//- here for older versions of Zen Cart that don't load the
+//- class via an autoloader.
+$autoLoadConfig[50][] = [
+    'autoType' => 'class',
+    'loadFile' => 'sniffer.php',
 ];
-//- sniffer class loaded via psr4Autoload.php
 $autoLoadConfig[50][] = [
     'autoType' => 'classInstantiate',
     'className' => 'sniffer',
@@ -108,26 +98,18 @@ $autoLoadConfig[70][] = [
     'loadFile' => 'init_sessions.php',
 ];
 /**
- * Breakpoint 80.
- *
- * if (!$_SESSION['cart']) $_SESSION['cart'] = new shoppingCart();
- *
- */
-//- shoppingCart class loaded via psr4Autoload.php
-$autoLoadConfig[80][] = [
-    'autoType' => 'classInstantiate',
-    'className' => 'shoppingCart',
-    'objectName' => 'cart',
-    'checkInstantiated' => true,
-    'classSession' => true,
-];
-/**
  * Breakpoint 90.
  *
  * currencies = new currencies();
  *
  */
-//- currencies class loaded via psr4Autoload.php
+//- currencies class loaded via psr4Autoload.php; reloading
+//- here for older versions of Zen Cart that don't load the
+//- class via an autoloader.
+$autoLoadConfig[90][] = [
+    'autoType' => 'class',
+    'loadFile' => 'currencies.php',
+];
 $autoLoadConfig[90][] = [
     'autoType' => 'classInstantiate',
     'className' => 'currencies',
@@ -141,6 +123,10 @@ $autoLoadConfig[90][] = [
  *
  */
 $autoLoadConfig[95][] = [
+    'autoType' => 'class',
+    'loadFile' => 'language.php',
+];
+$autoLoadConfig[95][] = [
     'autoType' => 'init_script',
     'loadFile' => 'init_languages.php',
 ];
@@ -152,7 +138,13 @@ $autoLoadConfig[96][] = [
  * Breakpoint 100.
  *
  */
-//- template_func class loaded via psr4Autoload.php
+//- template_func class loaded via psr4Autoload.php; reloading
+//- here for older versions of Zen Cart that don't load the
+//- class via an autoloader.
+$autoLoadConfig[100][] = [
+    'autoType' => 'class',
+    'loadFile' => 'template_func.php',
+];
 $autoLoadConfig[100][] = [
     'autoType' => 'classInstantiate',
     'className' => 'template_func',
@@ -180,7 +172,13 @@ $autoLoadConfig[120][] = [
  * messageStack = new messageStack();
  *
  */
-//- messageStack class loaded via psr4Autoload.php
+//- messageStack class loaded via psr4Autoload.php; reloading
+//- here for older versions of Zen Cart that don't load the
+//- class via an autoloader.
+$autoLoadConfig[130][] = [
+    'autoType' => 'class',
+    'loadFile' => 'message_stack.php',
+];
 $autoLoadConfig[130][] = [
     'autoType' => 'classInstantiate',
     'className' => 'messageStack',
