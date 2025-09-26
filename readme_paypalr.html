@@ -91,7 +91,7 @@ table table {
 
 <body>
     <h1>PayPal RESTful Payment Module (<var>paypalr</var>) for Zen Cart 1.5.8a and later</h1>
-    <h3>Version 1.2.1</h3>
+    <h3>Version 1.2.2</h3>
     <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/forumdisplay.php?170-PayPal-RESTful-support" target="_blank">https://www.zen-cart.com/forumdisplay.php?170-PayPal-RESTful-support</a></p>
     <p>Zen Cart Download Link: <a href="https://www.zen-cart.com/downloads.php?do=file&id=2382" target="_blank">https://www.zen-cart.com/downloads.php?do=file&id=2382</a></p>
     <p>GitHub repository: <a href="https://github.com/lat9/paypalr" target="_blank">https://github.com/lat9/paypalr</a></p>
@@ -186,6 +186,13 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
+        <li>v1.2.2-beta1 2025-09-26 (lat9, drbyte)<ul>
+            <li>BUGFIX: Correct webhook auto-loader for Zen Cart versions prior to 2.1.0.</li>
+            <li>The following files were changed:<ol>
+                <li>/includes/auto_loaders/webhook.core.php</li>
+                <li>/includes/modules/payment/paypalr.php</li>
+            </ol></li>
+        </ul></li>
         <li>v1.2.1, 2025-09-05 (lat9, drbyte)<ul>
             <li>BUGFIX: Can't remove module if it's disabled or credentials aren't set.</li>
             <li>BUGFIX: Root-directory files not copied on an upgrade from a previous version.</li>
