@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.2.2/v1.3.0
  */
 
 namespace PayPalRestful\Webhooks;
@@ -18,10 +18,9 @@ use PayPalRestful\Common\Logger;
 
 class WebhookController
 {
-    protected bool $enableDebugFileLogging = true;
-    protected Logger $ppr_logger;
+    protected $ppr_logger;
 
-    public function __invoke(): bool|null
+    public function __invoke()
     {
         defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
 
@@ -38,8 +37,8 @@ class WebhookController
         // Create logger, just for logging to /logs directory
         $this->ppr_logger = new Logger($logIdentifier);
 
-        // Enable logging
-        if ($this->enableDebugFileLogging) {
+        // Enable logging, if enabled via configuration
+        if (strpos(MODULE_PAYMENT_PAYPALR_DEBUGGING, 'Log') === 0) {
             $this->ppr_logger->enableDebug();
         }
 
@@ -118,7 +117,7 @@ class WebhookController
     /**
      * Save webhook records to database for subsequent querying
      */
-    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, string|array $request_headers): void
+    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, $request_headers): void
     {
         $json_body = json_decode($request_body, true);
 
