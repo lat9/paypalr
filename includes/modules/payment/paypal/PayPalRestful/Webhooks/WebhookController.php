@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Webhooks;
@@ -18,10 +18,10 @@ use PayPalRestful\Common\Logger;
 
 class WebhookController
 {
-    protected bool $enableDebugFileLogging = true;
-    protected Logger $ppr_logger;
+    protected $enableDebugFileLogging = true;
+    protected $ppr_logger;
 
-    public function __invoke(): bool|null
+    public function __invoke()
     {
         defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
 
@@ -111,14 +111,14 @@ class WebhookController
     protected function strToStudly(string $value, array $dividers = ['.', '-', '_']): string
     {
         $words = explode(' ', str_replace($dividers, ' ', strtolower($value)));
-        $studlyWords = array_map(static fn($word) => mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($word, 1, null, 'UTF-8'), $words);
+        $studlyWords = array_map(static function ($word) { return mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($word, 1, null, 'UTF-8'); }, $words);
         return implode($studlyWords);
     }
 
     /**
      * Save webhook records to database for subsequent querying
      */
-    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, string|array $request_headers): void
+    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, $request_headers)
     {
         $json_body = json_decode($request_body, true);
 
@@ -141,7 +141,7 @@ class WebhookController
     /**
      * Ensure database table exists
      */
-    protected function createDatabaseTable(): void
+    protected function createDatabaseTable()
     {
         global $db;
         $db->Execute(

@@ -13,18 +13,15 @@
 use PayPalRestful\Api\Data\CountryCodes;
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Zc2Pp\Amount;
-use Zencart\Traits\ObserverManager;
 
 require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
-class zcObserverPaypalrestful
+class zcObserverPaypalrestful extends base
 {
-    use ObserverManager;
-
-    protected array $lastOrderValues = [];
-    protected array $orderTotalChanges = [];
-    protected bool $freeShippingCoupon = false;
-    protected bool $headerAssetsSent = false;
+    protected $lastOrderValues = [];
+    protected $orderTotalChanges = [];
+    protected $freeShippingCoupon = false;
+    protected $headerAssetsSent = false;
 
     public function __construct()
     {
@@ -74,6 +71,7 @@ class zcObserverPaypalrestful
         // Attach to header to render JS SDK assets.
         $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN']); // NOTE: this might come too early to detect pageType properly
         $this->attach($this, ['NOTIFY_HTML_HEAD_END']);
+
         // Attach to footer to instantiate the JS.
         $this->attach($this, ['NOTIFY_FOOTER_END']);
     }
@@ -112,7 +110,7 @@ class zcObserverPaypalrestful
         $this->freeShippingCoupon = in_array($coupon_type, ['S', 'E', 'O']);
     }
 
-    public function updateNotifyHtmlHeadEnd(&$class, $eventID, $current_page_base): void
+    public function updateNotifyHtmlHeadEnd(&$class, $eventID, $current_page_base)
     {
         // This is a fallback for older versions, to ensure we only output the header JS once.
         if ($this->headerAssetsSent) {
@@ -120,12 +118,12 @@ class zcObserverPaypalrestful
         }
         $this->outputJsSdkHeaderAssets($current_page_base);
     }
-    public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base): void
+    public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base)
     {
         $this->outputJsSdkHeaderAssets($current_page_base);
         $this->headerAssetsSent = true;
     }
-    public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base): void
+    public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base)
     {
         $this->outputJsFooter($current_page_base);
     }
@@ -249,7 +247,7 @@ class zcObserverPaypalrestful
 
     /** Internal methods **/
 
-    protected function outputJsSdkHeaderAssets($current_page): void
+    protected function outputJsSdkHeaderAssets($current_page)
     {
         global $current_page_base, $order, $paypalSandboxBuyerCountryCodeOverride, $paypalSandboxLocaleOverride;
         if (empty($current_page)) {
@@ -294,7 +292,7 @@ class zcObserverPaypalrestful
 <?php
     }
 
-    protected function outputJsFooter($current_page_base): void
+    protected function outputJsFooter($current_page_base)
     {
         $containingElement = null;
         $priceSelector = null;
@@ -334,6 +332,31 @@ let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageS
         return;
     }
 
+    protected function getButtonsPageType(): string
+    {
+        global $current_page_base, $this_is_home_page, $category_depth, $tpl_page_body;
+
+        if (!defined('MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT')) {
+            return 'None';
+        }
+
+        switch (true) {
+            case str_starts_with($current_page_base, "checkout"):
+                return 'checkout';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page_base === 'shopping_cart':
+                return 'cart';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page_base === 'mini-cart':
+                return 'mini-cart';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Product') && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true):
+                return 'product-details';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Listing') && $category_depth === 'products':
+                return 'product-listing';
+            case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Search') && str_ends_with($current_page_base, 'search_result'):
+                return 'search-results';
+            default:
+                return 'None';
+        }
+    }
     protected function getMessagesPageType(): string
     {
         global $current_page_base, $this_is_home_page, $category_depth, $tpl_page_body;
@@ -341,17 +364,26 @@ let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageS
         $limit = defined('MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING') ? MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING : 'All';
         $limit = explode(', ', $limit);
 
-        return match(true) {
-            !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout") => 'checkout',
-            !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart' => 'cart',
-            //!empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart' => 'mini-cart', // @TODO this is more for a header box
-            !empty(array_intersect($limit, ['All', 'Product Pages'])) && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true) => 'product-details',
-            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($category_depth === 'products' || ($tpl_page_body ?? null) === 'tpl_index_product_list.php') => 'product-listing',
-            !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && str_ends_with($current_page_base, 'search_result') => 'search-results',
-            !empty($limit) && $this_is_home_page => 'home',
-            !empty($limit) => 'other',
-            default => 'None',
-        };
+        switch (true) {
+            case !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout"):
+                return 'checkout';
+            case !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart':
+                return 'cart';
+            case !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'mini-cart':
+                return 'mini-cart';
+            case !empty(array_intersect($limit, ['All', 'Product Pages'])) && in_array($current_page_base, zen_get_buyable_product_type_handlers(), true):
+                return 'product-details';
+            case !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && ($category_depth === 'products' || ($tpl_page_body ?? null) === 'tpl_index_product_list.php'):
+                return 'product-listing';
+            case !empty(array_intersect($limit, ['All', 'Product Listings and Search Results'])) && str_ends_with($current_page_base, 'search_result'):
+                return 'search-results';
+            case !empty($limit) && $this_is_home_page:
+                return 'home';
+            case !empty($limit):
+                return 'other';
+            default:
+                return 'None';
+        }
     }
 }
 
@@ -366,6 +398,7 @@ if (!function_exists('zen_get_buyable_product_type_handlers')) {
      * Get a list of product page names that identify buyable products.
      * This allows us to mark a page as containing a product which can
      * be allowed to add-to-cart or buy-now with various modules.
+     * @since ZC v2.2.0
      */
     function zen_get_buyable_product_type_handlers(): array
     {

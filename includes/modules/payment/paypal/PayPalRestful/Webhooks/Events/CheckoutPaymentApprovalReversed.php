@@ -6,7 +6,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Webhooks\Events;
@@ -17,11 +17,11 @@ use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class CheckoutPaymentApprovalReversed extends WebhookHandlerContract
 {
-    protected array $eventsHandled = [
+    protected $eventsHandled = [
         'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A problem occurred after the buyer approved the order but before you captured the payment.
         // https://developer.paypal.com/docs/api/orders/v2/

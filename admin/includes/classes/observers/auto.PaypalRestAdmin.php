@@ -3,21 +3,18 @@
  * Part of the paypalr (PayPal Restful Api) payment module.
  * Admin handles package tracking updates.
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 use PayPalRestful\Api\Data\CountryCodes;
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Zc2Pp\Amount;
-use Zencart\Traits\ObserverManager;
 
 require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
-class zcObserverPaypalRestAdmin
+class zcObserverPaypalRestAdmin extends base
 {
-    use ObserverManager;
-
-    protected bool $adminBeforeInsertDone = false;
+    protected $adminBeforeInsertDone = false;
 
     public function __construct()
     {
@@ -41,7 +38,7 @@ class zcObserverPaypalRestAdmin
     /**
      * @param array $data [int orders_id, int orders_status_id, date_added, int customer_notified, comments, updated_by]
      */
-    public function updateZenUpdateOrdersHistoryBeforeInsert(&$class, $eventID, $null, array $data): void
+    public function updateZenUpdateOrdersHistoryBeforeInsert(&$class, $eventID, $null, array $data)
     {
         $this->updateZenUpdateOrdersHistoryAfterInsert($class, $eventID, 0, $data);
         $this->detach($this, ['ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT']);
@@ -51,7 +48,7 @@ class zcObserverPaypalRestAdmin
     /**
      * @param array $data [int orders_id, int orders_status_id, date_added, int customer_notified, comments, updated_by]
      */
-    public function updateZenUpdateOrdersHistoryAfterInsert(&$class, $eventID, int $osh_id, array $data): void
+    public function updateZenUpdateOrdersHistoryAfterInsert(&$class, $eventID, int $osh_id, array $data)
     {
         if ($this->adminBeforeInsertDone) {
             // avoid double-processing when attached to an older version's ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT
@@ -84,7 +81,7 @@ class zcObserverPaypalRestAdmin
         }
 
         require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypalr.php';
-        [$client_id, $secret] = \paypalr::getEnvironmentInfo();
+        list($client_id, $secret) = \paypalr::getEnvironmentInfo();
         $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
 
         foreach ($track_ids as $i => $tracking_number) {
@@ -102,6 +99,7 @@ class zcObserverPaypalRestAdmin
 }
 
 if (!function_exists('zen_get_zcversion')) {
+    /** @since ZC v1.5.7 */
     function zen_get_zcversion()
     {
         return PROJECT_VERSION_MAJOR . '.' . PROJECT_VERSION_MINOR;

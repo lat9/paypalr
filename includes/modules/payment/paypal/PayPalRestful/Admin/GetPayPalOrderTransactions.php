@@ -6,7 +6,7 @@
  * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Admin;
 
@@ -17,25 +17,25 @@ use PayPalRestful\Common\Logger;
 
 class GetPayPalOrderTransactions
 {
-    protected string $moduleName;
+    protected $moduleName;
 
-    protected string $moduleVersion;
+    protected $moduleVersion;
 
-    protected int $oID;
+    protected $oID;
 
-    protected PayPalRestfulApi $ppr;
+    protected $ppr;
 
-    protected Logger $log;
+    protected $log;
 
-    protected array $databaseTxns = [];
+    protected $databaseTxns = [];
 
-    protected Messages $messages;
+    protected $messages;
 
-    protected string $paymentType;
+    protected $paymentType;
 
-    protected array $paypalTransactions = [];
+    protected $paypalTransactions = [];
 
-    protected bool $externalTxnAdded = false;
+    protected $externalTxnAdded = false;
 
     public function __construct(string $module_name, string $module_version, int $oID, PayPalRestfulApi $ppr)
     {
