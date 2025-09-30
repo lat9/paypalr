@@ -186,10 +186,12 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.2.2-beta1 2025-09-26 (lat9, drbyte)<ul>
+        <li>v1.2.2-beta1 2025-09-30 (lat9, drbyte)<ul>
             <li>BUGFIX: Correct webhook auto-loader for Zen Cart versions prior to 2.1.0.</li>
+            <li>BUGFIX: Correct webhook accesses <em>always</em> log.</li>
             <li>The following files were changed:<ol>
                 <li>/includes/auto_loaders/webhook.core.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookController.php</li>
                 <li>/includes/modules/payment/paypalr.php</li>
             </ol></li>
         </ul></li>
