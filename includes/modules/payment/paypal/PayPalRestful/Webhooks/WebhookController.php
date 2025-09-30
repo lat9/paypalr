@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.2.2/v1.3.0
  */
 
 namespace PayPalRestful\Webhooks;
@@ -18,7 +18,6 @@ use PayPalRestful\Common\Logger;
 
 class WebhookController
 {
-    protected $enableDebugFileLogging = true;
     protected $ppr_logger;
 
     public function __invoke()
@@ -38,8 +37,8 @@ class WebhookController
         // Create logger, just for logging to /logs directory
         $this->ppr_logger = new Logger($logIdentifier);
 
-        // Enable logging
-        if ($this->enableDebugFileLogging) {
+        // Enable logging, if enabled via configuration
+        if (strpos(MODULE_PAYMENT_PAYPALR_DEBUGGING, 'Log') === 0) {
             $this->ppr_logger->enableDebug();
         }
 
