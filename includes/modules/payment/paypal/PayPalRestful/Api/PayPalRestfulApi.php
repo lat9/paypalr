@@ -172,7 +172,9 @@ class PayPalRestfulApi extends ErrorInfo
     public function close()
     {
         if ($this->ch !== false) {
-            curl_close($this->ch);
+            if (PHP_VERSION_ID < 80000) {
+                curl_close($this->ch);
+            }
             $this->ch = false;
         }
     }
