@@ -26,6 +26,16 @@ class zcObserverPaypalrestful extends base
     public function __construct()
     {
         // -----
+        // If loaded via ppr_webhook.php, ensure that the $spider_flag is set so
+        // that application_top.php doesn't try to load the counter.php module which,
+        // depending on the zc version, might choke for the absence of the zcDate class.
+        //
+        global $loaderPrefix, $spider_flag;
+        if ($loaderPrefix === 'webhook') {
+            $spider_flag = true;
+        }
+
+        // -----
         // If the paypalr payment-module isn't installed or isn't configured to be
         // enabled, nothing further to do here.
         //
