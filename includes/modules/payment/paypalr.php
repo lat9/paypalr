@@ -2382,9 +2382,9 @@ if (!function_exists('zen_cfg_select_multioption_pairs')) {
     }
 }
 
-if (IS_ADMIN_FLAG === true) {
+if (IS_ADMIN_FLAG === true && isset($sniffer)) {
     // only check db on Admin side
-    if (is_object ($sniffer) && $sniffer->field_exists(TABLE_ORDERS_STATUS_HISTORY, 'updated_by') === false) {
+    if (is_object($sniffer) && $sniffer->field_exists(TABLE_ORDERS_STATUS_HISTORY, 'updated_by') === false) {
         $db->Execute("ALTER TABLE " . TABLE_ORDERS_STATUS_HISTORY . " ADD updated_by VARCHAR(45) NOT NULL DEFAULT ''");
     }
 }
