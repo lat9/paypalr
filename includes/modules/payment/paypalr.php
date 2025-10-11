@@ -447,7 +447,13 @@ class paypalr extends base
                         "INSERT IGNORE INTO " . TABLE_CONFIGURATION . "
                             (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added)
                          VALUES
-                            ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available. Only available in USD, GBP, EUR, AUD.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br>To disable, leave all unticked.', 6, 0, 'zen_cfg_select_multioption([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now())"
+                            ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available. Only available in USD, GBP, EUR, AUD.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br>To disable, leave all unticked.', 6, 0, 'zen_cfg_select_multioption_pairs([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now())"
+                    );
+                    $db->Execute(
+                        "UPDATE " . TABLE_CONFIGURATION . "
+                            SET set_function = 'zen_cfg_select_multioption_pairs([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], '
+                          WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING'
+                          LIMIT 1"
                     );
 
                     // -----
@@ -2124,7 +2130,7 @@ class paypalr extends base
 
                 ('Enable this Payment Module?', 'MODULE_PAYMENT_PAYPALR_STATUS', 'False', 'Do you want to enable this payment module? Use the <b>Retired</b> setting if you are planning to remove this payment module but still have administrative actions to perform against orders placed with this module.', 6, 0, 'zen_cfg_select_option([\'True\', \'False\', \'Retired\'], ', NULL, now()),
 
-                ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available. Only available in USD, GBP, EUR, AUD.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br>To disable, leave all unticked.', 6, 0, 'zen_cfg_select_multioption([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now()),
+                ('PayLater Messaging', 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING', 'Checkout, Shopping Cart, Product Pages', 'On which pages should PayPal PayLater messaging be displayed? (It will automatically not be displayed in regions where it is not available. Only available in USD, GBP, EUR, AUD.) When enabled, it will show the lower installment-based pricing for the presented product or cart amount. This may accelerate buying decisions.<br>To disable, leave all unticked.', 6, 0, 'zen_cfg_select_multioption_pairs([\'Checkout\', \'Shopping Cart\', \'Product Pages\', \'Product Listings and Search Results\'], ', NULL, now()),
 
                 ('Environment', 'MODULE_PAYMENT_PAYPALR_SERVER', 'live', '<b>Live: </b> Used to process Live transactions<br><b>Sandbox: </b>For developers and testing', 6, 0, 'zen_cfg_select_option([\'live\', \'sandbox\'], ', NULL, now()),
 
@@ -2390,45 +2396,51 @@ if (IS_ADMIN_FLAG === true && isset($sniffer)) {
 }
 
 if (!function_exists('zen_updated_by_admin')) {
-  /** @since ZC v1.5.6 */
-  function zen_updated_by_admin($admin_id = null) {
-    if (empty($admin_id) && empty($_SESSION['admin_id'])) {
-        return '';
+    /** @since ZC v1.5.6 */
+    function zen_updated_by_admin($admin_id = null)
+    {
+        if (empty($admin_id) && empty($_SESSION['admin_id'])) {
+            return '';
+        }
+        if (empty($admin_id)) {
+            $admin_id = $_SESSION['admin_id'];
+        }
+        $name = zen_get_admin_name($admin_id);
+        return ($name ?? 'Unknown Name') . " [$admin_id]";
     }
-    if (empty($admin_id)) {
-        $admin_id = $_SESSION['admin_id'];
+}
+
+if (!function_exists('zen_get_orders_status_name')) {
+    function zen_get_orders_status_name($orders_status_id, $language_id = '')
+    {
+        global $db;
+
+        if (!$language_id) {
+            $language_id = $_SESSION['languages_id'];
+        }
+        $orders_status = $db->Execute("select orders_status_name
+                                       from " . TABLE_ORDERS_STATUS . "
+                                       where orders_status_id = '" . (int)$orders_status_id . "'
+                                       and language_id = '" . (int)$language_id . "' LIMIT 1");
+        if ($orders_status->EOF) {
+            return '';
+        }
+        return $orders_status->fields['orders_status_name'];
     }
-    $name = zen_get_admin_name($admin_id);
-    return ($name ?? 'Unknown Name') . " [$admin_id]";
-  }
 }
 
-if (!function_exists ('zen_get_orders_status_name')) {
-  function zen_get_orders_status_name($orders_status_id, $language_id = '') {
-    global $db;
-
-    if (!$language_id) $language_id = $_SESSION['languages_id'];
-    $orders_status = $db->Execute("select orders_status_name
-                                   from " . TABLE_ORDERS_STATUS . "
-                                   where orders_status_id = '" . (int)$orders_status_id . "'
-                                   and language_id = '" . (int)$language_id . "' LIMIT 1");
-    if ($orders_status->EOF) return '';
-    return $orders_status->fields['orders_status_name'];
-  }
+if (!function_exists('zen_catalog_href_link') && function_exists('zen_href_link')) {
+    function zen_catalog_href_link ($page = '', $parameters = '', $connection = 'NONSSL')
+    {
+        return zen_href_link($page, $parameters, $connection, false);
+    }
 }
-
-if (!function_exists ('zen_catalog_href_link') && function_exists ('zen_href_link')) {
-    function zen_catalog_href_link ($page = '', $parameters = '', $connection = 'NONSSL') {
-      return zen_href_link ($page, $parameters, $connection, false);
-  }
-}
-
 
 if (!function_exists('zen_update_orders_history')) {
     function zen_update_orders_history($orders_id, $message = '', $updated_by = null, $orders_new_status = -1, $notify_customer = -1, $email_include_message = true, $email_subject = '', $send_extra_emails_to = '', $filename = ''): int
     {
         global $osh_sql, $osh_additional_comments;
-    
+
         // -----
         // Initialize return value to indicate no change and sanitize various inputs.
         //
@@ -2525,7 +2537,7 @@ if (!function_exists('zen_update_orders_history')) {
                         strip_tags($email_message) .
                         $status_text . $status_value_text .
                         OSH_EMAIL_TEXT_STATUS_PLEASE_REPLY;
-    
+
                     // Add in store specific order message
                     $email_order_message = defined('EMAIL_ORDER_UPDATE_MESSAGE') ? constant('EMAIL_ORDER_UPDATE_MESSAGE') : '';
                     $GLOBALS['zco_notifier']->notify('ZEN_UPDATE_ORDERS_HISTORY_SET_ORDER_UPDATE_MESSAGE', $orders_id, $email_order_message);
@@ -2533,7 +2545,7 @@ if (!function_exists('zen_update_orders_history')) {
                      $email_text .= "\n\n" . $email_order_message . "\n\n";
                     }
                     $html_msg['EMAIL_ORDER_UPDATE_MESSAGE'] = $email_order_message;
-    
+
                     $html_msg['EMAIL_SALUTATION'] = EMAIL_SALUTATION;
                     $html_msg['EMAIL_CUSTOMERS_NAME']    = $osh_info->fields['customers_name'];
                     $html_msg['EMAIL_TEXT_ORDER_NUMBER'] = OSH_EMAIL_TEXT_ORDER_NUMBER . ' ' . $orders_id;
@@ -2545,22 +2557,22 @@ if (!function_exists('zen_update_orders_history')) {
                     $html_msg['EMAIL_TEXT_NEW_STATUS'] = $new_orders_status_name;
                     $html_msg['EMAIL_TEXT_STATUS_PLEASE_REPLY'] = str_replace("\n", '', OSH_EMAIL_TEXT_STATUS_PLEASE_REPLY);
                     $html_msg['EMAIL_PAYPAL_TRANSID'] = '';
-    
+
                     if (empty($email_subject)) {
                         $email_subject = OSH_EMAIL_TEXT_SUBJECT . ' #' . $orders_id;
                     }
-    
+
                     $GLOBALS['zco_notifier']->notify('ZEN_UPDATE_ORDERS_HISTORY_BEFORE_SENDING_CUSTOMER_EMAIL', $orders_id, $email_subject, $email_text, $html_msg, $notify_customer);
-    
+
                     if ($notify_customer == 1) {
                         zen_mail($osh_info->fields['customers_name'], $osh_info->fields['customers_email_address'], $email_subject, $email_text, STORE_NAME, EMAIL_FROM, $html_msg, 'order_status', $filename);
                     }
-    
+
                     if (!empty($paypal['txn_id'])) {
                         $email_text .= "\n\n" . ' PayPal Trans ID: ' . $paypal['txn_id'];
                         $html_msg['EMAIL_PAYPAL_TRANSID'] = $paypal['txn_id'];
                     }
-    
+
                     //send extra emails
                     if (empty($send_extra_emails_to) && (int)SEND_EXTRA_ORDERS_STATUS_ADMIN_EMAILS_TO_STATUS === 1) {
                         $send_extra_emails_to = (string)SEND_EXTRA_ORDERS_STATUS_ADMIN_EMAILS_TO;
@@ -2569,7 +2581,7 @@ if (!function_exists('zen_update_orders_history')) {
                         zen_mail('', $send_extra_emails_to, SEND_EXTRA_ORDERS_STATUS_ADMIN_EMAILS_TO_SUBJECT . ' ' . $email_subject, $email_text, STORE_NAME, EMAIL_FROM, $html_msg, 'order_status_extra', $filename);
                     }
                 }
-    
+
                 if (empty($updated_by)) {
                     if (IS_ADMIN_FLAG === true && isset($_SESSION['admin_id'])) {
                         $updated_by = zen_updated_by_admin();
@@ -2581,7 +2593,7 @@ if (!function_exists('zen_update_orders_history')) {
                         $updated_by = 'N/A';
                     }
                 }
-    
+
                 $osh_sql = [
                     'orders_id' => $orders_id,
                     'orders_status_id' => $orders_new_status,
@@ -2590,12 +2602,12 @@ if (!function_exists('zen_update_orders_history')) {
                     'comments' => $message,
                     'updated_by' => $updated_by
                 ];
-    
+
                 $GLOBALS['zco_notifier']->notify('ZEN_UPDATE_ORDERS_HISTORY_BEFORE_INSERT', [], $osh_sql);
     
                 zen_db_perform (TABLE_ORDERS_STATUS_HISTORY, $osh_sql);
                 $osh_id = $GLOBALS['db']->Insert_ID();
-    
+
                 $GLOBALS['zco_notifier']->notify('ZEN_UPDATE_ORDERS_HISTORY_AFTER_INSERT', $osh_id, $osh_sql, $paypalLookup);
             }
         }
