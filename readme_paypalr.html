@@ -187,15 +187,46 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.0-alpha1, 2025-09-19 (lat9, drbyte)<ul>
+        <li>v1.3.0-alpha2, 2025-10-11 (lat9, drbyte)<ul>
             <li>CHANGE: Integrate PayPal's PayLater Messaging via PayPal JS SDK.</li>
             <li>BUGFIX: Correct webhook auto-loader for Zen Cart versions prior to 2.1.0.</li>
+            <li>BUGFIX: Correct webhook accesses <em>always</em> log.</li>
+            <li>CHANGE: Various updates and additions to enable support for older Zen Cart (and PHP) versions.</li>
+            <li>INTROP: Conditionally use <code>curl_close</code>; its deprecated for PHP 8.5.</li>
             <li>The following files were changed or <span class="added">added</span>:<ol>
+                <li>/admin/includes/classes/observers/auto.PayPalRestAdmin.php</li>
                 <li>/includes/auto_loaders/webhook.core.php</li>
                 <li>/includes/classes/observers/auto.paypalrestful.php</li>
-                <li>/includes/modules/payment/paypalr.php</li>
-                <li><span class="added">/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</span></li>
+                <li><span class="added">/includes/extra_configures/php_polyfills.php</span></li>
+                <li><span class="added">/includes/languages/english/modules/shipping/paypalr.php</span></li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/AdminMain.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/MainDisplay.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/Messages.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/GetPayPalOrderTransactions.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Api/Data/CountryCodes.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Api/PayPalRestfulApi.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Common/ErrorInfo.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Common/Logger.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Common/PayPalShippingCarriers.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Token/TokenCache.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/CheckoutPaymentApprovalReversed.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentAuthorizationVoided.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureCompleted.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureDeclined.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCapturePending.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureRefunded.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureReversed.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookController.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookHandlerContract.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookObject.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookResponder.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/Amount.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/ConfirmPayPalPaymentChoiceRequest.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/CreatePayPalOrderRequest.php</li>
+                <li><span class="added">/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</span></li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/ppr_listener.php</li>
+                <li>/includes/modules/payment/paypal/pprAutoload.php</li>
+                <li>/includes/modules/payment/paypalr.php</li>
             </ol></li>
         </ul></li>
         <li>v1.2.1, 2025-09-05 (lat9, drbyte)<ul>
