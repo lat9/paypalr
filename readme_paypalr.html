@@ -187,13 +187,16 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.0-alpha1, 2025-09-19 (lat9, drbyte)<ul>
+        <li>v1.3.0-alpha1, 2025-10-09 (lat9, drbyte)<ul>
             <li>CHANGE: Integrate PayPal's PayLater Messaging via PayPal JS SDK.</li>
             <li>BUGFIX: Correct webhook auto-loader for Zen Cart versions prior to 2.1.0.</li>
-            <li>The following files were changed or <span class="added">added</span>:<ol>
+            <li>BUGFIX: Correct webhook accesses <em>always</em> log.</li>
+            <li>The following files were changed:<ol>
                 <li>/includes/auto_loaders/webhook.core.php</li>
-                <li>/includes/classes/observers/auto.paypalrestful.php</li>
+                <li>/includes/modules/payment/paypal/pprAutoload.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookController.php</li>
                 <li>/includes/modules/payment/paypalr.php</li>
+                <li>/includes/modules/payment/paypal/pprAutoLoader.php</li>
                 <li><span class="added">/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</span></li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/CreatePayPalOrderRequest.php</li>
             </ol></li>
