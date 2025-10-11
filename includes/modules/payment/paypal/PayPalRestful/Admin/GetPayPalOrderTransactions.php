@@ -11,6 +11,7 @@
 namespace PayPalRestful\Admin;
 
 use PayPalRestful\Admin\Formatters\Messages;
+use PayPalRestful\Admin\Formatters\NullMessages;
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Common\Helpers;
 use PayPalRestful\Common\Logger;
@@ -45,7 +46,14 @@ class GetPayPalOrderTransactions
         $this->ppr = $ppr;
 
         $this->log = new Logger();
-        $this->messages = new Messages();
+
+        if (\IS_ADMIN_FLAG === true) {
+            $this->messages = new Messages();
+        } else {
+            // Use a null-object class to avoid errors where calling messageStack methods
+            // may trigger problems where no messages are actually needed such as webhooks
+            $this->messages = new NullMessages();
+        }
 
         $this->getPayPalDatabaseTransactionsForOrder();
     }
