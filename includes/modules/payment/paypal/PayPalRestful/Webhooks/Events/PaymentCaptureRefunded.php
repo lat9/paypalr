@@ -6,7 +6,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 
 namespace PayPalRestful\Webhooks\Events;
@@ -16,11 +16,11 @@ use PayPalRestful\Webhooks\WebhookHandlerContract;
 
 class PaymentCaptureRefunded extends WebhookHandlerContract
 {
-    protected array $eventsHandled = [
+    protected $eventsHandled = [
         'PAYMENT.CAPTURE.REFUNDED',
     ];
 
-    public function action(): void
+    public function action()
     {
         // A merchant refunds a payment capture.
         // https://developer.paypal.com/docs/api/payments/v2/#authorizations_capture - Show details for authorized payment with response `status` of `refunded`.

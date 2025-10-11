@@ -12,7 +12,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Api;
 
@@ -29,43 +29,43 @@ class PayPalRestfulApi extends ErrorInfo
     // -----
     // Constants used to set the class variable errorInfo['errNum'].
     //
-    public const ERR_NO_ERROR      = 0;    //-No error occurred, initial value
+    const ERR_NO_ERROR      = 0;    //-No error occurred, initial value
 
-    public const ERR_NO_CHANNEL    = -1;   //-Set if the curl_init fails; no other requests are honored
-    public const ERR_CURL_ERROR    = -2;   //-Set if the curl_exec fails.  The curlErrno variable contains the curl_errno and errMsg contains curl_error
+    const ERR_NO_CHANNEL    = -1;   //-Set if the curl_init fails; no other requests are honored
+    const ERR_CURL_ERROR    = -2;   //-Set if the curl_exec fails.  The curlErrno variable contains the curl_errno and errMsg contains curl_error
 
     // -----
     // Constants that define the test and production endpoints for the API requests.
     //
-    protected const ENDPOINT_SANDBOX = 'https://api-m.sandbox.paypal.com/';
-    protected const ENDPOINT_PRODUCTION = 'https://api-m.paypal.com/';
+    const ENDPOINT_SANDBOX = 'https://api-m.sandbox.paypal.com/';
+    const ENDPOINT_PRODUCTION = 'https://api-m.paypal.com/';
 
     // -----
     // PayPal constants associated with an order/payment's current 'status'. Also
     // used for the paypal::payment_status field.
     //
-    public const STATUS_APPROVED = 'APPROVED';
-    public const STATUS_CAPTURED = 'CAPTURED';
-    public const STATUS_COMPLETED = 'COMPLETED';
-    public const STATUS_CREATED = 'CREATED';
-    public const STATUS_DENIED = 'DENIED';
-    public const STATUS_FAILED = 'FAILED';
-    public const STATUS_PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED';
+    const STATUS_APPROVED = 'APPROVED';
+    const STATUS_CAPTURED = 'CAPTURED';
+    const STATUS_COMPLETED = 'COMPLETED';
+    const STATUS_CREATED = 'CREATED';
+    const STATUS_DENIED = 'DENIED';
+    const STATUS_FAILED = 'FAILED';
+    const STATUS_PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED';
 
     //- The order requires an action from the payer (e.g. 3DS authentication or PayPal confirmation).
     //    Redirect the payer to the "rel":"payer-action" HATEOAS link returned as part of the response
     //    prior to authorizing or capturing the order.
-    public const STATUS_PAYER_ACTION_REQUIRED = 'PAYER_ACTION_REQUIRED';
+    const STATUS_PAYER_ACTION_REQUIRED = 'PAYER_ACTION_REQUIRED';
 
-    public const STATUS_PENDING = 'PENDING';
-    public const STATUS_REFUNDED = 'REFUNDED';
-    public const STATUS_SAVED = 'SAVED';
-    public const STATUS_VOIDED = 'VOIDED';
+    const STATUS_PENDING = 'PENDING';
+    const STATUS_REFUNDED = 'REFUNDED';
+    const STATUS_SAVED = 'SAVED';
+    const STATUS_VOIDED = 'VOIDED';
 
     /**
      * Webhook actions we intend to listen for notifications regarding.
      */
-    protected array $webhooksToRegister = [
+    protected $webhooksToRegister = [
         'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
         'PAYMENT.AUTHORIZATION.VOIDED',
         'PAYMENT.CAPTURE.COMPLETED',
@@ -80,25 +80,25 @@ class PayPalRestfulApi extends ErrorInfo
      *
      * @log Logger object, logs debug tracing information.
      */
-    protected Logger $log;
+    protected $log;
 
     /**
      * Variables associated with interface logging;
      *
      * @token TokenCache object, caches any access-token retrieved from PayPal.
      */
-    protected TokenCache $tokenCache;
+    protected $tokenCache;
 
     /**
      * Sandbox or production? Set during class construction.
      */
-    protected string $endpoint;
+    protected $endpoint;
 
     /**
      * OAuth client id and secret, set during class construction.
      */
-    private string $clientId;
-    private string $clientSecret;
+    private $clientId;
+    private $clientSecret;
 
     /**
      * The CURL channel, initialized during construction.
@@ -109,7 +109,7 @@ class PayPalRestfulApi extends ErrorInfo
      * Options for cURL. Defaults to preferred (constant) options.  Used by
      * the curlGet and curlPost methods.
      */
-    protected array $curlOptions = [
+    protected $curlOptions = [
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_FOLLOWLOCATION => false,
         CURLOPT_FORBID_REUSE => true,
@@ -125,20 +125,20 @@ class PayPalRestfulApi extends ErrorInfo
      * (the default).  See https://developer.paypal.com/api/rest/requests/#http-request-headers
      * for additional information.
      */
-    protected string $paypalRequestId = '';
+    protected $paypalRequestId = '';
 
     /**
      * Contains an (optional) "Mock Response" to be included in the HTTP
      * header's PayPal-Mock-Response value, enabling testing to be performed
      * for error responses; see the above link for additional information.
      */
-    protected string $paypalMockResponse = '';
+    protected $paypalMockResponse = '';
 
     /**
      * A binary flag that indicates whether/not the caller wants to keep the 'links' returned
      * by the various PayPal responses.
      */
-    protected bool $keepTxnLinks = false;
+    protected $keepTxnLinks = false;
 
     // -----
     // Class constructor, saves endpoint (live vs. sandbox), clientId and clientSecret
@@ -172,7 +172,9 @@ class PayPalRestfulApi extends ErrorInfo
     public function close()
     {
         if ($this->ch !== false) {
-            curl_close($this->ch);
+            if (PHP_VERSION_ID < 80000) {
+                curl_close($this->ch);
+            }
             $this->ch = false;
         }
     }
@@ -363,8 +365,8 @@ class PayPalRestfulApi extends ErrorInfo
         string $tracking_number,
         string $carrier_code,
         string $action = 'ADD',
-        bool $email_buyer = false,
-    ): false|array {
+        bool $email_buyer = false
+    ) {
         $this->log->write("==> Start updatePackageTracking($paypal_txnid, " . Logger::logJSON($tracking_number) . ", $carrier_code, $action ...)\n", true);
 
         if (empty($tracking_number)) {
@@ -457,7 +459,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * Submit API call to register the webhooks we are able to listen for
      */
-    public function subscribeWebhook(): void
+    public function subscribeWebhook()
     {
         if (empty($this->webhooksToRegister)) {
             return;
@@ -529,7 +531,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * Ensure the webhooks we want to listen for are all registered
      */
-    public function registerAndUpdateSubscribedWebhooks(): void
+    public function registerAndUpdateSubscribedWebhooks()
     {
         $webhook_id = defined('MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS') ? MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS : '';
 
@@ -585,7 +587,7 @@ class PayPalRestfulApi extends ErrorInfo
         $response = $this->curlPatch("v1/notifications/webhooks/$webhook_id", [$parameters]);
     }
 
-    public function webhookVerifyByPostback($parameters): bool|null
+    public function webhookVerifyByPostback($parameters)
     {
         $this->log->write("==> Start webhookVerifyByPostback", true);
         $response = $this->curlPost('v1/notifications/verify-webhook-signature', $parameters);
@@ -600,7 +602,7 @@ class PayPalRestfulApi extends ErrorInfo
     /**
      * When uninstalling this module, we should cleanup the webhook subscription record, so PayPal stops sending notifications.
      */
-    public function unsubscribeWebhooks(): void
+    public function unsubscribeWebhooks()
     {
         $this->log->write("==> Start deleteWebhook Registration", true);
         $url = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_webhook.php';

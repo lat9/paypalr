@@ -6,7 +6,7 @@
  * @copyright Copyright 2023-2025 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.2.0
+ * Last updated: v1.4.0
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -25,29 +25,29 @@ class CreatePayPalOrderRequest extends ErrorInfo
     /**
      * Debug interface, shared with the PayPalRestfulApi class.
      */
-    protected Logger $log; //- An instance of the Logger class, logs debug tracing information.
+    protected $log; //- An instance of the Logger class, logs debug tracing information.
 
     /**
      * Local "Amount" class; it's got the to-be-used currency for the PayPal order
      * stashed in a static variable!
      */
-    protected Amount $amount;
+    protected $amount;
 
     /**
      * The currency-code in which the PayPal order is to be 'built'.
      */
-    protected string $paypalCurrencyCode;
+    protected $paypalCurrencyCode;
 
     /**
      * The request to be submitted to a v2/orders/create PayPal endpoint.
      */
-    protected array $request;
+    protected $request;
 
     /**
-     * The items' pricing 'breakdown' elements, gathered by getItems and
+     * The items' pricing 'breakdown' elements, gathered by getItems
      * and subsequently used by getOrderTotals.
      */
-    protected array $itemBreakdown = [
+    protected $itemBreakdown = [
         'item_onetime_charges' => 0.0,
         'item_total' => 0,
         'item_tax_total' => 0,
@@ -60,7 +60,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
      * Set by getOrderAmountAndBreakdown and used by buildLevel2Level3Data for
      * the level-3 data.
      */
-    protected float $overallDiscount = 0.0;
+    protected $overallDiscount = 0.0;
 
     // -----
     // Constructor.  "Converts" a Zen Cart order into an PayPal /orders/create object.
@@ -69,6 +69,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
     //
     public function __construct(string $ppr_type, \order $order, array $cc_info, array $order_info, array $ot_diffs)
     {
+        // Instantiate any ErrorInfo dependencies
         parent::__construct();
 
         $this->log = new Logger();
@@ -225,7 +226,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
             }
 
             // -----
-            // PayPal supports *only* integer-quanties in the order's item list,
+            // PayPal supports *only* integer-quantities in the order's item list,
             // so if any quantity is not an integer value, the items' array
             // can't be included in the PayPal order request.  Noting that this
             // will be an issue for sites that sell fabric or cheeses, for instance.
@@ -396,7 +397,7 @@ class CreatePayPalOrderRequest extends ErrorInfo
     }
 
     // -----
-    // Separate 'calculators' for the 'handling', 'insurance' and 'discount amounts
+    // Separate 'calculators' for the 'handling', 'insurance' and 'discount' amounts
     // for the order.
     //
     protected function calculateHandling(array $ot_diffs): float

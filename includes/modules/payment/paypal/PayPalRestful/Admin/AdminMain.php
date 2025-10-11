@@ -6,7 +6,7 @@
  * @copyright Copyright 2023-2024 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.0.4
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Admin;
 
@@ -16,11 +16,11 @@ use PayPalRestful\Api\PayPalRestfulApi;
 
 class AdminMain
 {
-    protected PayPalRestfulApi $ppr;
+    protected $ppr;
 
-    protected string $adminNotifications = '';
+    protected $adminNotifications = '';
     
-    protected bool $externalTxnAdded = false;
+    protected $externalTxnAdded = false;
 
     public function __construct(string $module_name, string $module_version, int $oID, PayPalRestfulApi $ppr)
     {

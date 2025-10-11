@@ -7,7 +7,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 require 'includes/application_top.php';
 
@@ -84,7 +84,7 @@ if (!isset($_SESSION['PayPalRestful']['Order']['PayerAction'])) {
 // a 3DS verification for a credit-card payment.
 //
 require DIR_WS_MODULES . 'payment/paypalr.php';
-[$client_id, $secret] = paypalr::getEnvironmentInfo();
+list($client_id, $secret) = paypalr::getEnvironmentInfo();
 
 $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
 $ppr->setKeepTxnLinks(true);

@@ -5,6 +5,8 @@
  * @copyright Copyright 2023 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
+ *
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -12,16 +14,16 @@ use PayPalRestful\Common\Logger;
 
 class Amount
 {
-    protected array $amount = [
+    protected $amount = [
         'currency_code' => '',
         'value' => '',
     ];
-    protected static array $defaultCurrencyCode = [
+    protected static $defaultCurrencyCode = [
         'value' => '',
         'no_decimals' => false,
         'in_country_only' => false,
     ];
-    protected static array $supportedCurrencyCodes = [
+    protected static $supportedCurrencyCodes = [
         'AUD' => [],    //- Australian dollar
         'BRL' => [],    //- Brazilian real
         'CAD' => [],    //- Canadian dollar
@@ -52,7 +54,7 @@ class Amount
     /**
      * Debug interface, shared with the PayPalRestfulApi class.
      */
-    protected Logger $log; //- An instance of the Logger class, logs debug tracing information.
+    protected $log; //- An instance of the Logger class, logs debug tracing information.
 
     // -----
     // An alias for setDefaultCurrency.

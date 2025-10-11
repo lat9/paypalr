@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.0
+ * Last updated: v1.3.0
  */
 namespace PayPalRestful\Webhooks;
 
@@ -17,11 +17,14 @@ use PayPalRestful\Api\PayPalRestfulApi;
 
 class WebhookResponder
 {
-    protected bool $shouldRespond = false;
+    protected $shouldRespond = false;
 
-    protected string|null $webhook_listener_subscribe_id = null;
+    protected $webhook_listener_subscribe_id = null;
+    protected $webhook;
 
-    public function __construct(protected WebhookObject $webhook) {
+    public function __construct(WebhookObject $webhook) {
+        $this->webhook = $webhook;
+
         $this->setWebhookSubscribeId();
     }
 
@@ -44,7 +47,7 @@ class WebhookResponder
         return $this->shouldRespond;
     }
 
-    public function verify(): bool|null
+    public function verify()
     {
         if ($this->shouldRespond !== true) {
             return null;
@@ -72,7 +75,7 @@ class WebhookResponder
     /**
      * @return bool|null  returns null if we cannot do CRC check, so fails over to PostBack approach
      */
-    protected function doCrcCheck(): bool|null
+    protected function doCrcCheck()
     {
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
 
@@ -97,7 +100,7 @@ class WebhookResponder
     /**
      * @return bool|null  returns null if unable to use CURL or if the access token is invalid.
      */
-    protected function verifyByPostback(): bool|null
+    protected function verifyByPostback()
     {
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
         $params_array = [
@@ -112,7 +115,7 @@ class WebhookResponder
 
         // Load the PayPal RESTful API class and get the credentials, so we can make the postback using the current access token
         require DIR_WS_MODULES . 'payment/paypalr.php';
-        [$client_id, $secret] = \paypalr::getEnvironmentInfo();
+        list($client_id, $secret) = \paypalr::getEnvironmentInfo();
         $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
 
         // We pass true here because we can only get an access token if it is valid; else we must just say the webhook validation failed

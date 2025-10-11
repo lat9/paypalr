@@ -110,14 +110,14 @@ class WebhookController
     protected function strToStudly(string $value, array $dividers = ['.', '-', '_']): string
     {
         $words = explode(' ', str_replace($dividers, ' ', strtolower($value)));
-        $studlyWords = array_map(static fn($word) => mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($word, 1, null, 'UTF-8'), $words);
+        $studlyWords = array_map(static function ($word) { return mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($word, 1, null, 'UTF-8'); }, $words);
         return implode($studlyWords);
     }
 
     /**
      * Save webhook records to database for subsequent querying
      */
-    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, $request_headers): void
+    protected function saveToDatabase(string $user_agent, string $request_method, string $request_body, $request_headers)
     {
         $json_body = json_decode($request_body, true);
 
@@ -140,7 +140,7 @@ class WebhookController
     /**
      * Ensure database table exists
      */
-    protected function createDatabaseTable(): void
+    protected function createDatabaseTable()
     {
         global $db;
         $db->Execute(
