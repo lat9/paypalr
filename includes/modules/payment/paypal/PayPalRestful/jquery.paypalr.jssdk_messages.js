@@ -14,122 +14,6 @@ jQuery(function() {
         return;
     }
 
-    // Possible placements for PayLater messaging;
-    //  pageType is the page to which the rest of the details apply in this object; relates to paypalr config switch MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING
-    //  container is what containing element we will search in,
-    //  price is the element inside container where the price is found,
-    //  outputElement is what element we want the PayPal SDK to add pricing display into
-    //    NOTE: where a duplicate occurs with #paypal-message-container first, that's to allow overriding by adding said element to the template where desired
-    //  styleAlign can be left, center, right. Controls placement in outputElement.
-
-    let $messagableObjects = [
-        {
-            pageType: "product-details",
-            container: "#productsPriceBottom-card",
-            price: ".productBasePrice",
-            outputElement: "#paypal-message-container",
-            styleAlign: ""
-        },
-        {
-            pageType: "product-details",
-            container: "#productsPriceBottom-card",
-            price: ".productBasePrice",
-            outputElement: ".productPriceBottomPrice",
-            styleAlign: ""
-        },
-        {
-            pageType: "product-details",
-            container: ".add-to-cart-Y",
-            price: ".productBasePrice",
-            outputElement: "#productPrices",
-            styleAlign: ""
-        },
-        {
-            pageType: "product-details",
-            container: ".add-to-cart-Y",
-            price: ".productBasePrice",
-            outputElement: "#paypal-message-container",
-            styleAlign: ""
-        },
-        {
-            pageType: "product-listing",
-            container: ".pl-dp",
-            price: ".productBasePrice",
-            outputElement: ".pl-dp",
-            styleAlign: ""
-        },
-        {
-            pageType: "product-listing",
-            container: ".list-price",
-            price: ".productBasePrice",
-            outputElement: ".list-price",
-            styleAlign: ""
-        },
-        {
-            pageType: "search-results",
-            container: ".pl-dp",
-            price: ".productBasePrice",
-            outputElement: ".pl-dp",
-            styleAlign: ""
-        },
-        {
-            pageType: "search-results",
-            container: ".list-price",
-            price: ".productBasePrice",
-            outputElement: ".list-price",
-            styleAlign: ""
-        },
-        {
-            pageType: "cart",
-            container: "#shoppingCartDefault",
-            price: "#cart-total",
-            outputElement: "#paypal-message-container",
-            styleAlign: "right"
-        },
-        {
-            pageType: "cart",
-            container: "#shoppingCartDefault-cartTableDisplay",
-            price: "#cartTotal",
-            outputElement: "#cartTotal",
-            styleAlign: "right"
-        },
-        {
-            pageType: "cart",
-            container: "#shoppingCartDefault",
-            price: "#cartSubTotal",
-            outputElement: "#cartSubTotal",
-            styleAlign: "right"
-        },
-        {
-            pageType: "checkout",
-            container: "#checkout_payment",
-            price: "#ottotal > .ot-text",
-            outputElement: "#ottotal > .ot-title",
-            styleAlign: "right"
-        },
-        {
-            pageType: "checkout",
-            container: "#checkoutPayment",
-            price: "#ottotal > .ot-text",
-            outputElement: "#ottotal > .ot-title",
-            styleAlign: "right"
-        },
-        {
-            pageType: "checkout",
-            container: "#checkoutOrderTotals",
-            price: "#ottotal > .totalBox",
-            outputElement: "#ottotal > .lineTitle",
-            styleAlign: "right"
-        },
-        {
-            pageType: "checkout",
-            container: "#cartOrderTotals",
-            price: "#ottotal > .totalBox",
-            outputElement: "#ottotal > .lineTitle",
-            styleAlign: "right"
-        },
-    ];
-
     let $paypalMessagesOutputContainer = ""; // empty placeholder
     let $paypalHasMessageObjects = false;
     let shouldBreak = false;
@@ -169,10 +53,8 @@ jQuery(function() {
                 console.info("Msgs Loop " + index + ": priceElement is empty. Skipping.");
                 return true;
             }
-            // Use .slice(1) to remove the leading currency symbol, and replace() any commas (thousands-separators).
-            const price = Number(
-                priceElement.textContent.slice(1).replace(/,/, '')
-            );
+            // Use .replace to remove the leading currency symbol and any commas (thousands-separators).
+            const price = Number(priceElement.textContent.replace(/[^\d.]/g, ''));
             console.info("Msgs Loop " + index + ": " + 'Price ' + price + "; will try to set in " + current.outputElement)
 
             // Add/set the data-pp-amount attribute on this element.
