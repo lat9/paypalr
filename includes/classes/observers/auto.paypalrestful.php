@@ -78,12 +78,14 @@ class zcObserverPaypalrestful extends base
         }
 
         // -----
-        // Attach to header to render JS SDK assets.
-        $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN']); // NOTE: this might come too early to detect pageType properly
-        $this->attach($this, ['NOTIFY_HTML_HEAD_END']);
-
-        // Attach to footer to instantiate the JS.
-        $this->attach($this, ['NOTIFY_FOOTER_END']);
+        // Attach to header to render JS SDK assets and the footer to load
+        // the JS.
+        //
+        $this->attach($this, [
+            'NOTIFY_HTML_HEAD_JS_BEGIN', // NOTE: this might come too early to detect pageType properly
+            'NOTIFY_HTML_HEAD_END',
+            'NOTIFY_FOOTER_END',
+        ]);
     }
 
     // -----
