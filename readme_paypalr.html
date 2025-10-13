@@ -193,6 +193,7 @@ table table {
             <li>BUGFIX: Correct webhook accesses <em>always</em> log.</li>
             <li>CHANGE: Various updates and additions to enable support for older Zen Cart (and PHP) versions.</li>
             <li>INTROP: Conditionally use <code>curl_close</code>; its deprecated for PHP 8.5.</li>
+            <li>BUGFIX: Correct PHP warnings caused by conflict with messageStack during webhook processing.</li>
             <li>The following files were changed or <span class="added">added</span>:<ol>
                 <li>/admin/includes/classes/observers/auto.PayPalRestAdmin.php</li>
                 <li>/includes/auto_loaders/webhook.core.php</li>
@@ -202,6 +203,7 @@ table table {
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/AdminMain.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/MainDisplay.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/Messages.php</li>
+                <li><span class="added">/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/NullMessages.php</span></li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/GetPayPalOrderTransactions.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Api/Data/CountryCodes.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Api/PayPalRestfulApi.php</li>
