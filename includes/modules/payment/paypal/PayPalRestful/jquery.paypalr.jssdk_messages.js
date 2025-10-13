@@ -19,8 +19,8 @@ jQuery(function() {
     let shouldBreak = false;
     $messagableObjects.unshift(paypalMessageableOverride);
     jQuery.each($messagableObjects, function(index, current) {
-        if (shouldBreak) {
-            return false; // break outer loop
+        if ($paypalHasMessageObjects) {
+            return false; // break outer loop, because we only want to process the first output container found
         }
 
         if (paypalMessagesPageType !== current.pageType) {
@@ -42,36 +42,41 @@ jQuery(function() {
             return true;
         }
 
+        // At this point we have a matched array from $messagableObjects
+        $paypalMessagesOutputContainer = current.outputElement;
+        $paypalHasMessageObjects = true;
+        if (current.styleAlign.length) {
+            payLaterStyles.text.align = current.styleAlign;
+        }
+        console.info("Msgs Loop " + index + ": " + current.outputElement + " found on page, and " + current.container + " element found. Extracting price from " + current.price);
+
+        let $addTo = $output;
+
         // each container is either a product, or a cart/checkout div that contains another element containing a price
         jQuery.each($findInContainer, function (i, element) {
-            console.info("Msgs Loop " + index + ": " + current.outputElement + " found on page, and " + current.container + " element found. Extracting price from " + current.price);
 
             // Extract the price of the product by grabbing the text content of the element that contains the price.
-            // @TODO: could try to parse for numeric data, or split "words" out of it in case the price is prefixed with text
-            let priceElement = element.querySelector(current.price);
+            // Loop through possible price elements expected to be found in the identified container, falling back to finding sale/special first, before base/normal.
+            let priceSelectors = Array.isArray(current.price) ? current.price : [current.price, '.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'];
+            let priceElement = null;
+            for (let selector of priceSelectors) {
+                priceElement = element.querySelector(selector);
+                if (priceElement) break;
+            }
+
             if (!priceElement) {
                 console.info("Msgs Loop " + index + ": priceElement is empty. Skipping.");
                 return true;
             }
             // Use .replace to remove the leading currency symbol and any commas (thousands-separators).
-            const price = Number(priceElement.textContent.replace(/[^\d.]/g, ''));
+            let price = Number(priceElement.textContent.replace(/[^\d.]/g, ''));
             console.info("Msgs Loop " + index + ": " + 'Price ' + price + "; will try to set in " + current.outputElement)
 
-            // Add/set the data-pp-amount attribute on this element.
-            // The PayPal SDK monitors message elements for changes to its attributes,
-            // so the message is updated automatically to reflect this amount in whatever messaging PayPal displays.
-            $output.attr('data-pp-amount', price.toString());
+            $addTo = $findInContainer.length > 1 ? jQuery(element) : $output;
 
-            $paypalMessagesOutputContainer = current.outputElement;
-            $paypalHasMessageObjects = true;
-
-            if (current.styleAlign.length) {
-                payLaterStyles.text.align = current.styleAlign;
-            }
-
-            // finished with the loop
-            shouldBreak = true; // flag to break outer loop too
-            return false;
+            // The PayPal SDK monitors message elements for changes to its attributes such as data-pp-amount, which we add here,
+            // so their messaging is updated automatically to reflect this amount in whatever messaging PayPal displays.
+            $addTo.attr('data-pp-amount', price.toString());
         });
     });
 
