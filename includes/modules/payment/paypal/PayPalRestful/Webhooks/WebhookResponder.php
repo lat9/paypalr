@@ -11,6 +11,7 @@
  *
  * Last updated: v1.3.0
  */
+
 namespace PayPalRestful\Webhooks;
 
 use PayPalRestful\Api\PayPalRestfulApi;
@@ -22,7 +23,8 @@ class WebhookResponder
     protected $webhook_listener_subscribe_id = null;
     protected $webhook;
 
-    public function __construct(WebhookObject $webhook) {
+    public function __construct(WebhookObject $webhook)
+    {
         $this->webhook = $webhook;
 
         $this->setWebhookSubscribeId();
@@ -88,8 +90,8 @@ class WebhookResponder
 
         $publicKeyUrl = $headers['PAYPAL-CERT-URL'];
 
-        // @TODO - download and cache the public key, from the URL, instead of retrieving fresh in real time
-        $pem_cert = \file_get_contents($publicKeyUrl); // @TODO add curl fallback option in case server blocks this way of reading
+        // @TODO - consider download and cache the public key, from the URL, instead of retrieving fresh in real time
+        $pem_cert = $this->read_url($publicKeyUrl);
 
         $publicKey = openssl_get_publickey($pem_cert);
 
@@ -139,4 +141,32 @@ class WebhookResponder
             $this->webhook_listener_subscribe_id = MODULE_PAYMENT_PAYPALR_SUBSCRIBED_WEBHOOKS;
         }
     }
+
+    /**
+     * Read the cert via URL using file_get_contents or curl as fallback
+     *
+     * @param string $url
+     * @return bool|string
+     */
+    protected function read_url($url)
+    {
+        // Try file_get_contents first
+        if (ini_get('allow_url_fopen')) {
+            $result = file_get_contents($url);
+        }
+        if (!empty($result)) {
+            return $result;
+        }
+        // Fallback to curl
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_USERAGENT => 'ZCPP WebhookResponder/1.0',
+        ]);
+        return curl_exec($ch);
+    }
+
 }
