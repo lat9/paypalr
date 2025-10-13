@@ -78,12 +78,14 @@ class zcObserverPaypalrestful extends base
         }
 
         // -----
-        // Attach to header to render JS SDK assets.
-        $this->attach($this, ['NOTIFY_HTML_HEAD_JS_BEGIN']); // NOTE: this might come too early to detect pageType properly
-        $this->attach($this, ['NOTIFY_HTML_HEAD_END']);
-
-        // Attach to footer to instantiate the JS.
-        $this->attach($this, ['NOTIFY_FOOTER_END']);
+        // Attach to header to render JS SDK assets and the footer to load
+        // the JS.
+        //
+        $this->attach($this, [
+            'NOTIFY_HTML_HEAD_JS_BEGIN', // NOTE: this might come too early to detect pageType properly
+            'NOTIFY_HTML_HEAD_END',
+            'NOTIFY_FOOTER_END',
+        ]);
     }
 
     // -----
@@ -130,11 +132,13 @@ class zcObserverPaypalrestful extends base
     }
     public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base)
     {
-        $this->outputJsSdkHeaderAssets($current_page_base);
-        $this->headerAssetsSent = true;
+        $this->headerAssetsSent = $this->outputJsSdkHeaderAssets($current_page_base);
     }
     public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base)
     {
+        if ($this->headerAssetsSent === false) {
+            return;
+        }
         $this->outputJsFooter($current_page_base);
     }
 
@@ -254,7 +258,6 @@ class zcObserverPaypalrestful extends base
         return $this->freeShippingCoupon;
     }
 
-
     /** Internal methods **/
 
     protected function outputJsSdkHeaderAssets($current_page)
@@ -287,19 +290,20 @@ class zcObserverPaypalrestful extends base
         $js_fields['components'] = 'messages';
 
         $js_page_type = $this->getMessagesPageType();
-
-        if (!empty($js_page_type) && !in_array($js_page_type, ['home', 'other', 'None'], true)) {
-            $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
+        if (empty($js_page_type) || in_array($js_page_type, ['home', 'other', 'None'], true)) {
+            return false;
         }
 
+        $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
         $js_fields['integration-date'] = '2025-08-01';
         $js_scriptparams[] = 'data-partner-attribution-id="ZenCart_SP_PPCP"';
         $js_scriptparams[] = 'data-namespace="PayPalSDK"';
 ?>
 
-<script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> async></script>
+<script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> defer></script>
 
 <?php
+        return true;
     }
 
     protected function outputJsFooter($current_page_base)
@@ -330,12 +334,191 @@ class zcObserverPaypalrestful extends base
                 'styleAlign' => $messageStyles['text']['align'] ?? 'center',
             ];
         }
+
+        $messagableObjects = [
+            [   //- product_info, bootstrap, position override, sale price present
+                'pageType' => 'product-details',
+                'container' => '#productsPriceBottom-card',
+                'price' => '.productSalePrice',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, bootstrap, position override, special price present
+                'pageType' => 'product-details',
+                'container' => '#productsPriceBottom-card',
+                'price' => '.productSpecialPriceSale',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, bootstrap, position override
+                'pageType' => 'product-details',
+                'container' => '#productsPriceBottom-card',
+                'price' => '.productBasePrice',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, bootstrap, sale price present
+                'pageType' => 'product-details',
+                'container' => '#productsPriceBottom-card',
+                'price' => '.productSalePrice',
+                'outputElement' => '.productPriceBottomPrice',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, bootstrap, special price present
+                'pageType' => 'product-details',
+                'container' => '#productsPriceBottom-card',
+                'price' => '.productSpecialPriceSale',
+                'outputElement' => '.productPriceBottomPrice',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, bootstrap
+                'pageType' => 'product-details',
+                'container' => '#productsPriceBottom-card',
+                'price' => '.productBasePrice',
+                'outputElement' => '.productPriceBottomPrice',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, responsive_classic, position override, sale price present
+                'pageType' => 'product-details',
+                'container' => '.add-to-cart-Y',
+                'price' => '.productSalePrice',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, responsive_classic, position override, special price present
+                'pageType' => 'product-details',
+                'container' => '.add-to-cart-Y',
+                'price' => '.productSpecialPriceSale',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, responsive_classic, position override
+                'pageType' => 'product-details',
+                'container' => '.add-to-cart-Y',
+                'price' => '.productBasePrice',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => '',
+            ],
+           [   //- product_info, responsive_classic, sale price present
+                'pageType' => 'product-details',
+                'container' => '.add-to-cart-Y',
+                'price' => '.productSalePrice',
+                'outputElement' => '#productPrices',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, responsive_classic, special price present
+                'pageType' => 'product-details',
+                'container' => '.add-to-cart-Y',
+                'price' => '.productSpecialPriceSale',
+                'outputElement' => '#productPrices',
+                'styleAlign' => '',
+            ],
+            [   //- product_info, responsive_classic
+                'pageType' => 'product-details',
+                'container' => '.add-to-cart-Y',
+                'price' => '.productBasePrice',
+                'outputElement' => '#productPrices',
+                'styleAlign' => '',
+            ],
+            [   //- listing pages, bootstrap, sale price present
+                'pageType' => 'product-listing',
+                'container' => '.pl-dp',
+                'price' => '.productSalePrice',
+                'outputElement' => '.pl-dp',
+                'styleAlign' => '',
+            ],
+            [   //- listing pages, bootstrap, special price present
+                'pageType' => 'product-listing',
+                'container' => '.pl-dp',
+                'price' => '.productSpecialPriceSale',
+                'outputElement' => '.pl-dp',
+                'styleAlign' => '',
+            ],
+            [   //- listing pages, bootstrap
+                'pageType' => 'product-listing',
+                'container' => '.pl-dp',
+                'price' => '.productBasePrice',
+                'outputElement' => '.pl-dp',
+                'styleAlign' => '',
+            ],
+            [   //- listing pages, responsive classic
+                'pageType' => 'product-listing',
+                'container' => '.list-price',
+                'price' => '.productBasePrice',
+                'outputElement' => '.list-price',
+                'styleAlign' => '',
+            ],
+            [   //- search results, bootstrap
+                'pageType' => 'search-results',
+                'container' => '.pl-dp',
+                'price' => '.productBasePrice',
+                'outputElement' => '.pl-dp',
+                'styleAlign' => '',
+            ],
+            [   //- search results, responsive classic
+                'pageType' => 'search-results',
+                'container' => '.list-price',
+                'price' => '.productBasePrice',
+                'outputElement' => '.list-price',
+                'styleAlign' => '',
+            ],
+            [   //- shopping-cart, position override
+                'pageType' => 'cart',
+                'container' => '#shoppingCartDefault',
+                'price' => '#cart-total',
+                'outputElement' => '#paypal-message-container',
+                'styleAlign' => 'right',
+            ],
+            [   //- shopping-cart, bootstrap
+                'pageType' => 'cart',
+                'container' => '#shoppingCartDefault-cartTableDisplay',
+                'price' => '#cartTotal',
+                'outputElement' => '#cartTotal',
+                'styleAlign' => 'right',
+            ],
+            [   //- shopping-cart, responsive classic
+                'pageType' => 'cart',
+                'container' => '#shoppingCartDefault',
+                'price' => '#cartSubTotal',
+                'outputElement' => '#cartSubTotal',
+                'styleAlign' => 'right',
+            ],
+            [   //- OPC checkout, bootstrap
+                'pageType' => 'checkout',
+                'container' => '#checkout_payment',
+                'price' => '#ottotal > .ot-text',
+                'outputElement' => '#ottotal > .ot-title',
+                'styleAlign' => 'right',
+            ],
+            [   //- checkout-payment, bootstrap
+                'pageType' => 'checkout',
+                'container' => '#checkoutPayment',
+                'price' => '#ottotal > .ot-text',
+                'outputElement' => '#ottotal > .ot-title',
+                'styleAlign' => 'right',
+            ],
+            [   //- OPC checkout, responsive classic
+                'pageType' => 'checkout',
+                'container' => '#checkoutOrderTotals',
+                'price' => '#ottotal > .totalBox',
+                'outputElement' => '#ottotal > .lineTitle',
+                'styleAlign' => 'right',
+            ],
+            [   //- standard checkout, responsive classic
+                'pageType' => 'checkout',
+                'container' => '#cartOrderTotals',
+                'price' => '#ottotal > .totalBox',
+                'outputElement' => '#ottotal > .lineTitle',
+                'styleAlign' => 'right',
+            ],
+        ];
 ?>
 <script title="PayPal Pay Later Messaging">
 // PayPal PayLater messaging set up
 let paypalMessagesPageType = '<?= $pageType ?>';
 let paypalMessageableOverride = <?= $override ? json_encode($override) : '{}' ?>;
 let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles) : '{}' ?>;
+let $messagableObjects = <?= json_encode($messagableObjects) ?>;
 <?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
 </script>
 <?php
@@ -351,7 +534,7 @@ let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageS
         }
 
         switch (true) {
-            case str_starts_with($current_page_base, "checkout"):
+            case str_starts_with($current_page_base, 'checkout'):
                 return 'checkout';
             case str_contains(MODULE_PAYMENT_PAYPALR_BUTTON_PLACEMENT, 'Cart') && $current_page_base === 'shopping_cart':
                 return 'cart';
@@ -375,7 +558,7 @@ let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageS
         $limit = explode(', ', $limit);
 
         switch (true) {
-            case !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, "checkout"):
+            case !empty(array_intersect($limit, ['All', 'Checkout'])) && str_starts_with($current_page_base, 'checkout'):
                 return 'checkout';
             case !empty(array_intersect($limit, ['All', 'Shopping Cart'])) && $current_page_base === 'shopping_cart':
                 return 'cart';
