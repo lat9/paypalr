@@ -194,6 +194,7 @@ table table {
             <li>CHANGE: Various updates and additions to enable support for older Zen Cart (and PHP) versions.</li>
             <li>INTROP: Conditionally use <code>curl_close</code>; its deprecated for PHP 8.5.</li>
             <li>BUGFIX: Correct PHP warnings caused by conflict with messageStack during webhook processing.</li>
+            <li>BUGFIX: Account for sites where <code>allow_url_fopen</code> is set to false.</li>
             <li>The following files were changed or <span class="added">added</span>:<ol>
                 <li>/admin/includes/classes/observers/auto.PayPalRestAdmin.php</li>
                 <li>/includes/auto_loaders/webhook.core.php</li>
