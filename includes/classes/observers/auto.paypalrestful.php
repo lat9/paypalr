@@ -132,11 +132,13 @@ class zcObserverPaypalrestful extends base
     }
     public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base)
     {
-        $this->outputJsSdkHeaderAssets($current_page_base);
-        $this->headerAssetsSent = true;
+        $this->headerAssetsSent = $this->outputJsSdkHeaderAssets($current_page_base);
     }
     public function updateNotifyFooterEnd(&$class, $eventID, $current_page_base)
     {
+        if ($this->headerAssetsSent === false) {
+            return;
+        }
         $this->outputJsFooter($current_page_base);
     }
 
@@ -256,7 +258,6 @@ class zcObserverPaypalrestful extends base
         return $this->freeShippingCoupon;
     }
 
-
     /** Internal methods **/
 
     protected function outputJsSdkHeaderAssets($current_page)
@@ -289,19 +290,20 @@ class zcObserverPaypalrestful extends base
         $js_fields['components'] = 'messages';
 
         $js_page_type = $this->getMessagesPageType();
-
-        if (!empty($js_page_type) && !in_array($js_page_type, ['home', 'other', 'None'], true)) {
-            $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
+        if (empty($js_page_type) || in_array($js_page_type, ['home', 'other', 'None'], true)) {
+            return false;
         }
 
+        $js_scriptparams[] = 'data-page-type="' . $js_page_type . '"';
         $js_fields['integration-date'] = '2025-08-01';
         $js_scriptparams[] = 'data-partner-attribution-id="ZenCart_SP_PPCP"';
         $js_scriptparams[] = 'data-namespace="PayPalSDK"';
 ?>
 
-<script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> async></script>
+<script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> defer></script>
 
 <?php
+        return true;
     }
 
     protected function outputJsFooter($current_page_base)
