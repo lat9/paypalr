@@ -336,129 +336,59 @@ class zcObserverPaypalrestful extends base
         }
 
         $messagableObjects = [
-            [   //- product_info, bootstrap, position override, sale price present
+            [   //- product_info, bootstrap, position override, fallback price selectors
                 'pageType' => 'product-details',
                 'container' => '#productsPriceBottom-card',
-                'price' => '.productSalePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '#paypal-message-container',
                 'styleAlign' => '',
             ],
-            [   //- product_info, bootstrap, position override, special price present
+            [   //- product_info, bootstrap, fallback price selectors
                 'pageType' => 'product-details',
                 'container' => '#productsPriceBottom-card',
-                'price' => '.productSpecialPriceSale',
-                'outputElement' => '#paypal-message-container',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, bootstrap, position override
-                'pageType' => 'product-details',
-                'container' => '#productsPriceBottom-card',
-                'price' => '.productBasePrice',
-                'outputElement' => '#paypal-message-container',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, bootstrap, sale price present
-                'pageType' => 'product-details',
-                'container' => '#productsPriceBottom-card',
-                'price' => '.productSalePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '.productPriceBottomPrice',
                 'styleAlign' => '',
             ],
-            [   //- product_info, bootstrap, special price present
-                'pageType' => 'product-details',
-                'container' => '#productsPriceBottom-card',
-                'price' => '.productSpecialPriceSale',
-                'outputElement' => '.productPriceBottomPrice',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, bootstrap
-                'pageType' => 'product-details',
-                'container' => '#productsPriceBottom-card',
-                'price' => '.productBasePrice',
-                'outputElement' => '.productPriceBottomPrice',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, responsive_classic, position override, sale price present
+            [   //- product_info, responsive_classic, position override, fallback price selectors
                 'pageType' => 'product-details',
                 'container' => '.add-to-cart-Y',
-                'price' => '.productSalePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '#paypal-message-container',
                 'styleAlign' => '',
             ],
-            [   //- product_info, responsive_classic, position override, special price present
+            [   //- product_info, responsive_classic, fallback price selectors
                 'pageType' => 'product-details',
                 'container' => '.add-to-cart-Y',
-                'price' => '.productSpecialPriceSale',
-                'outputElement' => '#paypal-message-container',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, responsive_classic, position override
-                'pageType' => 'product-details',
-                'container' => '.add-to-cart-Y',
-                'price' => '.productBasePrice',
-                'outputElement' => '#paypal-message-container',
-                'styleAlign' => '',
-            ],
-           [   //- product_info, responsive_classic, sale price present
-                'pageType' => 'product-details',
-                'container' => '.add-to-cart-Y',
-                'price' => '.productSalePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '#productPrices',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, responsive_classic, special price present
-                'pageType' => 'product-details',
-                'container' => '.add-to-cart-Y',
-                'price' => '.productSpecialPriceSale',
-                'outputElement' => '#productPrices',
-                'styleAlign' => '',
-            ],
-            [   //- product_info, responsive_classic
-                'pageType' => 'product-details',
-                'container' => '.add-to-cart-Y',
-                'price' => '.productBasePrice',
-                'outputElement' => '#productPrices',
-                'styleAlign' => '',
-            ],
-            [   //- listing pages, bootstrap, sale price present
-                'pageType' => 'product-listing',
-                'container' => '.pl-dp',
-                'price' => '.productSalePrice',
-                'outputElement' => '.pl-dp',
-                'styleAlign' => '',
-            ],
-            [   //- listing pages, bootstrap, special price present
-                'pageType' => 'product-listing',
-                'container' => '.pl-dp',
-                'price' => '.productSpecialPriceSale',
-                'outputElement' => '.pl-dp',
                 'styleAlign' => '',
             ],
             [   //- listing pages, bootstrap
                 'pageType' => 'product-listing',
                 'container' => '.pl-dp',
-                'price' => '.productBasePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '.pl-dp',
                 'styleAlign' => '',
             ],
             [   //- listing pages, responsive classic
                 'pageType' => 'product-listing',
                 'container' => '.list-price',
-                'price' => '.productBasePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '.list-price',
                 'styleAlign' => '',
             ],
             [   //- search results, bootstrap
                 'pageType' => 'search-results',
                 'container' => '.pl-dp',
-                'price' => '.productBasePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '.pl-dp',
                 'styleAlign' => '',
             ],
             [   //- search results, responsive classic
                 'pageType' => 'search-results',
                 'container' => '.list-price',
-                'price' => '.productBasePrice',
+                'price' => ['.productSalePrice', '.productSpecialPriceSale', '.productSpecialPrice', '.productBasePrice', '.normalPrice'],
                 'outputElement' => '.list-price',
                 'styleAlign' => '',
             ],
@@ -514,12 +444,12 @@ class zcObserverPaypalrestful extends base
         ];
 ?>
 <script title="PayPal Pay Later Messaging">
-// PayPal PayLater messaging set up
-let paypalMessagesPageType = '<?= $pageType ?>';
-let paypalMessageableOverride = <?= $override ? json_encode($override) : '{}' ?>;
-let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles) : '{}' ?>;
-let $messagableObjects = <?= json_encode($messagableObjects) ?>;
-<?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
+    // PayPal PayLater messaging set up
+    let paypalMessagesPageType = '<?= $pageType ?>';
+    let paypalMessageableOverride = <?= $override ? json_encode($override) : '{}' ?>;
+    let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles) : '{}' ?>;
+    let $messagableObjects = <?= json_encode($messagableObjects) ?>;
+    <?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
 </script>
 <?php
         return;
