@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PayPal Restful Payment Module for Zen Cart 1.5.8a and Later</title>
+<title>PayPal Restful Payment Module for Zen Cart 1.5.7 and Later</title>
 <style>
 a, a:active,
 a:visited {
@@ -100,23 +100,24 @@ table table {
     <p>This Zen Cart payment module combines the processing for the <b>PayPal Payments Pro</b> (<var>paypaldp</var>) and <b>PayPal Express Checkout</b> (<var>paypalwpp</var>) payment modules that are currently built into the Zen Cart distribution.  Instead of using the older NVP (<b>N</b>ame <b>V</b>alue <b>P</b>air) methods to communicate with PayPal, this payment module uses PayPal's now-current <a href="https://developer.paypal.com/api/rest/" target="_blank">REST APIs</a> and combines the two legacy methods into one.</p>
     <p>The module's operation has been validated &hellip;</p>
     <ol>
-        <li>With PHP versions 7.4 through 8.4; <b>PHP 7.3 will result in fatal PHP errors!</b></li>
-        <li>In Zen Cart's 3-page checkout environment (v1.5.8<b>a</b>, v2.0.x and v2.1.0)</li>
+        <li>With PHP versions 7.0 through 8.5; <b>PHP versions less than 7.0 will result in fatal PHP errors!</b></li>
+        <li>In Zen Cart's 3-page checkout environment (v1.5.7, v2.0.x, v2.1.0 and v2.2.0-alpha)</li>
         <li>With <a href="https://www.zen-cart.com/downloads.php?do=file&id=2095" target="_blank">One-Page Checkout</a> (OPC), v2.4.6-2.5.5<ol type="a">
             <li>Using <em>OPC</em>'s guest-checkout feature.</li>
             <li>Both requiring confirmation and not!</li>
         </ol></li>
-        <li>With both the built-in <var>responsive_classic</var> and <a href="https://www.zen-cart.com/downloads.php?do=file&id=2191" target="_blank"><var>ZCA Bootstrap</var></a> (v3.6.2-v3.7.7) templates.</li>
+        <li>With both the built-in <var>responsive_classic</var> and <a href="https://www.zen-cart.com/downloads.php?do=file&id=2191" target="_blank"><var>ZCA Bootstrap</var></a> (v3.6.2-v3.7.8) templates.</li>
     </ol>
     <p>For additional information, refer to the payment-module's <a href="https://github.com/lat9/paypalr/wiki" target="_blank">wiki articles</a>.</p>
     <p><b>Credits:</b> CSS-based spinner compliments of <a href="https://loading.io/css/" target="_blank">loading.io css spinner</a>.</p>
 
     <h2>Installation and Upgrade</h2>
     <h3>Initial Installation</h3>
-    <h4>Before you start &hellip;</h4>
+    <h4 class="impt">Before you start &hellip;</h4>
     <ol>
         <li>Follow the instructions in the payment module's Wiki to <a href="https://github.com/lat9/paypalr/wiki/Creating-PayPal-Credentials" target="_blank">create the PayPal credentials</a> required to communicate with PayPal.</li>
         <li><b>If your site is using a Zen Cart version <em>prior to</em> 2.0.0</b>, add the payment module's <b>required</b> notifications to the <var>order_total</var> class, as described in <a href="https://github.com/lat9/paypalr/wiki/Required-changes-to-%60-includes-classes-order_total.php%60" target="_blank">this</a> Wiki article. Without this update, the payment module will <a href="https://github.com/lat9/paypalr/wiki/Configuring-the-Payment-Module#missing-required-notifications" target="_blank">automatically disable</a> itself.</li>
+        <li>If you want to make use of the &quot;PayPal PayLater&quot; messaging feature introduced in v1.3.0 of this payment module, you need to verify that your site's active template includes a couple of notifications that enable this feature to operate.  See <a href="https://github.com/lat9/paypalr/wiki/Using-PayPal-PayLater" target="_blank">this</a> Wiki article for details.</li>
     </ol>
     <h4>Once you've completed those start-up steps &hellip;</h4>
     <ol>
@@ -187,7 +188,7 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.0-alpha2, 2025-10-11 (lat9, drbyte)<ul>
+        <li>v1.3.0, 2025-10-15 (lat9, drbyte)<ul>
             <li>CHANGE: Integrate PayPal's PayLater Messaging via PayPal JS SDK.</li>
             <li>BUGFIX: Correct webhook auto-loader for Zen Cart versions prior to 2.1.0.</li>
             <li>BUGFIX: Correct webhook accesses <em>always</em> log.</li>
