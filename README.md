@@ -8,7 +8,7 @@ Zen Cart Plugin Download Link: https://www.zen-cart.com/downloads.php?do=file&id
 The module's operation has been validated …
 
 1. With PHP versions 7.0 through 8.5; **PHP versions prior to 7.0 will result in fatal PHP errors!**
-2. In Zen Cart's 3-page checkout environment (v1.5.7, v2.0.x, v2.1.0 and v2.2.0-alpha)
+2. In Zen Cart's 3-page checkout environment (v1.5.7, v1.5.8, v2.0.x, v2.1.0 and v2.2.0-alpha)
 3. With One-Page Checkout  (OPC), v2.4.6-2.5.5
    1. Using *OPC*'s guest-checkout feature.
    2. Both requiring confirmation and not!
