@@ -2,11 +2,11 @@
 /**
  * paypalr.php payment module class for PayPal RESTful API payment method
  *
- * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.1
  */
 /**
  * Load the support class' auto-loader.
@@ -33,7 +33,7 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    const CURRENT_VERSION = '1.3.0';
+    const CURRENT_VERSION = '1.3.1-beta1';
 
     const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
@@ -240,6 +240,16 @@ class paypalr extends base
                 $this->title .= ' <strong>(Debug)</strong>';
             }
             $this->tableCheckup();
+
+            // -----
+            // Make sure that the root-directory files copied during install/upgrade are
+            // actually present.  If not, the payment module is auto-disabled.
+            //
+            // Starting with v1.3.1, the payment module **always** checks that
+            // its root-directory listeners/handlers have been copied from within the module's
+            // storefront includes directory.
+            //
+            $this->enabled = $this->manageRootDirectoryFiles();
         } elseif ($this->enabled === true) {
             // -----
             // Ensure that the payment-module's observer-class is loaded (auto.paypalrestful.php).  That
@@ -291,6 +301,7 @@ class paypalr extends base
         // or if we're processing for the admin or a webhook, all finished here!
         //
         $this->enabled = ($this->enabled === true && $this->validateConfiguration($curl_installed));
+
         if ($this->enabled && IS_ADMIN_FLAG === true) {
             // register/update known webhooks
             $this->ppr->registerAndUpdateSubscribedWebhooks();
@@ -455,13 +466,6 @@ class paypalr extends base
                           WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING'
                           LIMIT 1"
                     );
-
-                    // -----
-                    // Starting with v1.2.0, installing the payment module includes creating
-                    // its root-directory listeners/handlers from a copy within the module's
-                    // storefront includes directory.
-                    //
-                    $this->manageRootDirectoryFiles();
 
                 /* falls through */
                 default:
@@ -2236,13 +2240,6 @@ class paypalr extends base
         }
 
         // -----
-        // Starting with v1.2.0, installing the payment module includes creating
-        // its root-directory listeners/handlers from a copy within the module's
-        // storefront includes directory.
-        //
-        $this->manageRootDirectoryFiles();
-
-        // -----
         // Define the module's current version so that the tableCheckup method
         // will apply all changes since the module's introduction.
         //
@@ -2252,23 +2249,43 @@ class paypalr extends base
         $this->notify('NOTIFY_PAYMENT_PAYPALR_INSTALLED');
     }
 
-    protected function manageRootDirectoryFiles()
+    protected function manageRootDirectoryFiles(): bool
     {
+        if ($this->enabled === false) {
+            return false;
+        }
+
+        $files_ok = true;
+        $problem_files = [];
+
         // -----
         // Starting with v1.2.0, installing the payment module includes creating
         // its root-directory listeners/handlers from a copy within the module's
         // storefront includes directory.
         //
-        $ppr_listener = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_listener.php');
-        file_put_contents(DIR_FS_CATALOG . 'ppr_listener.php', $ppr_listener);
+        $root_files = ['ppr_listener.php', 'ppr_webhook.php'];
+        foreach ($root_files as $next_file) {
+            $source_file = DIR_FS_CATALOG . DIR_WS_MODULES . "payment/paypal/PayPalRestful/$next_file";
+            $target_file = DIR_FS_CATALOG . $next_file;
 
-        $ppr_webhook = file_get_contents(DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/PayPalRestful/ppr_webhook.php');
-        file_put_contents(DIR_FS_CATALOG . 'ppr_webhook.php', $ppr_webhook);
+            $file_contents = file_get_contents($source_file);
+            file_put_contents($target_file, $file_contents);
 
-        // We also delete the old ppr_webhook_main.php file if present
+            if (!file_exists($target_file) || filesize($source_file) !== filesize($target_file)) {
+                $files_ok = false;
+                $problem_files[] = $next_file;
+            }
+        }
+
+        // We also delete the old ppr_webhook_main.php file, if present
         if (file_exists(DIR_FS_CATALOG . 'ppr_webhook_main.php')) {
             unlink(DIR_FS_CATALOG . 'ppr_webhook_main.php');
         }
+
+        if ($files_ok === false) {
+            $this->setConfigurationDisabled(sprintf(MODULE_PAYMENT_PAYPALR_ALERT_MISSING_ROOT_FILES, implode(', ', $problem_files)));
+        }
+        return $files_ok;
     }
 
     public function keys(): array
