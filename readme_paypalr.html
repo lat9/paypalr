@@ -202,9 +202,12 @@ table table {
     <ul>
         <li>v1.3.1-beta1, 2026-02-26 (lat9)<ul>
             <li>BUGFIX: Auto-disable if root-directory files aren't copied; implies a root-directory file-system permissions issue.</li>
+            <li>BUGFIX: Correct <em>Pay Later</em> amounts and messaging.</li>
             <li>The following files were changed:<ol>
+                <li>/includes/classes/observers/auto.paypalrestful.php</li>
                 <li>/includes/languages/english/modules/payment/lang.paypalr.php</span></li>
                 <li>/includes/modules/payment/paypalr.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</li>
             </ol></li>
         </ul></li>
         <li>v1.3.0, 2025-10-15 (lat9, drbyte)<ul>

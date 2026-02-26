@@ -7,7 +7,7 @@
  * to determine an order's overall value and what amounts each order-total
  * module has added/subtracted to the order's overall value.
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.1
  */
 
 use PayPalRestful\Api\Data\CountryCodes;
@@ -306,6 +306,10 @@ class zcObserverPaypalrestful extends base
         return true;
     }
 
+    // -----
+    // Outputs the javascript support for the PayPal PayLater messaging
+    // into the page's footer.
+    //
     protected function outputJsFooter($current_page_base)
     {
         $containingElement = null;
@@ -319,7 +323,7 @@ class zcObserverPaypalrestful extends base
             ],
             "text" => [
                 "align" => "center"
-            ]
+            ],
         ];
         $pageType = $this->getMessagesPageType();
         $this->notify('NOTIFY_PAYPAL_PAYLATER_SELECTORS', ['current_page_base' => $current_page_base, 'pageType' => $pageType], $containingElement, $priceSelector, $outputElement, $messageStyles);
@@ -449,6 +453,7 @@ class zcObserverPaypalrestful extends base
     let paypalMessageableOverride = <?= $override ? json_encode($override) : '{}' ?>;
     let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles) : '{}' ?>;
     let $messagableObjects = <?= json_encode($messagableObjects) ?>;
+    let paypalPayLaterCurrency = '<?= $_SESSION['currency'] ?>';
     <?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
 </script>
 <?php
