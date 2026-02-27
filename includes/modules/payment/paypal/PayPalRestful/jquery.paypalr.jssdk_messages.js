@@ -75,20 +75,28 @@ jQuery(function() {
             // numerics and comma/period separators (e.g. currency symbols).
             let price = priceElement.textContent.replace(/[^\d.,]/g, '');
 
-            // Now, replace any ',xx' (where xx is a 2-digit numeric at the end-of-string) with '.xx',
-            // converting that comma decimal-separator into a dot decimal-separator
-            // as PayPal requires.
-            price = price.replace(/^([\d,]+),(\d{2})$/, '$1.$2');
+            // Next, split the price value into its 2-digit decimal digits (at
+            // the end of string) and its integral portion (to the left of the
+            // decimal point (either a period or comma).
+            //
+            // There "should be" 3 pieces (entire string, integral portion and decimal portion)
+            // returned by the match; if not, cycle to the next price
+            let pieces = price.match(/^([\d.,]+)[.,](\d{2})$/);
+            console.info('Msgs Loop ' + index + ': Price ' + price + ', Pieces: ' + pieces);
+            if (pieces.length !== 3) {
+                return true;
+            }
 
-            // Finally, remove any remaining commas and convert the value to a number
-            price = Number(price.replaceAll(',', ''));
-            console.info("Msgs Loop " + index + ": " + 'Price ' + price + "; will try to set in " + current.outputElement)
+            // Finally, form the price to be sent to PayPal, removing any '.,' characters
+            // from the integral value and using a period as the decimal separator.
+            price = pieces[1].replace(/[.,]/g, '')+'.'+pieces[2];
+            console.info('Reformatted price: '+price);
 
             $addTo = $findInContainer.length > 1 ? jQuery(element) : $output;
 
             // The PayPal SDK monitors message elements for changes to its attributes such as data-pp-amount, which we add here,
             // so their messaging is updated automatically to reflect this amount in whatever messaging PayPal displays.
-            $addTo.attr('data-pp-amount', price.toString());
+            $addTo.attr('data-pp-amount', price);
             $addTo.attr('data-pp-currency', paypalPayLaterCurrency);
         });
     });
