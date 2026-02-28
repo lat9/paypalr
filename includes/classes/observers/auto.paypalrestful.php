@@ -128,7 +128,7 @@ class zcObserverPaypalrestful extends base
         if ($this->headerAssetsSent) {
             return;
         }
-        $this->outputJsSdkHeaderAssets($current_page_base);
+        $this->headerAssetsSent = $this->outputJsSdkHeaderAssets($current_page_base);
     }
     public function updateNotifyHtmlHeadJsBegin(&$class, $eventID, $current_page_base)
     {
