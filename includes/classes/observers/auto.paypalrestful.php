@@ -455,6 +455,12 @@ class zcObserverPaypalrestful extends base
                 'styleAlign' => 'right',
             ],
         ];
+
+        // -----
+        // Enable an observer to add/modify the messagable objects' locations.  First match
+        // in the array is where the message is output!
+        //
+        $this->notify('NOTIFY_PAYPAL_PAYLATER_MESSAGE_OBJECTS', $messagableObjects, $messagableObjects);
 ?>
 <script title="PayPal Pay Later Messaging">
     // PayPal PayLater messaging set up
