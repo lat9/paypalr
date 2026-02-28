@@ -298,6 +298,15 @@ class zcObserverPaypalrestful extends base
         $js_fields['integration-date'] = '2025-08-01';
         $js_scriptparams[] = 'data-partner-attribution-id="ZenCart_SP_PPCP"';
         $js_scriptparams[] = 'data-namespace="PayPalSDK"';
+
+        // -----
+        // Set the 'locale' for the "Pay Later" messaging, so long as the current locale isn't
+        // a 2-character version, e.g. 'en' vs. 'en_US' or 'en_GB'.
+        //
+        $current_locale = setlocale(LC_TIME, '0');
+        if ($current_locale !== false && strlen($current_locale) > 2) {
+            $js_fields['locale'] = $current_locale;
+        }
 ?>
 
 <script title="PayPalSDK" id="PayPalJSSDK" src="<?= $js_url . '?'. str_replace('%2C', ',', http_build_query($js_fields)) ?>" <?= implode(' ', $js_scriptparams) ?> defer></script>
