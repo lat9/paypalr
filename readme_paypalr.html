@@ -200,17 +200,19 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.1-beta1, 2026-02-26 (lat9, brittainmark)<ul>
+        <li>v1.3.1-beta2, 2026-03-08 (lat9, brittainmark, andy-1977)<ul>
             <li>BUGFIX: Auto-disable if root-directory files aren't copied; implies a root-directory file-system permissions issue.</li>
             <li>BUGFIX: Correct <em>Pay Later</em> amounts and messaging.</li>
             <li>INTROP: Adding the <code>locale=</code> parameter to the JS-SDK load, in an attempt to get PayPal language translations.</li>
             <li>BUGFIX: Pay Later messaging not included for older templates (missing <code>NOTIFY_HTML_HEAD_JS_BEGIN</code> notification).</li>
             <li>BUGFIX: Add notification, enabling PayLater message location overrides.</li>
+            <li>BUGFIX: Correct missing PayPal fields when the order's paid via credit- or debit-card.</li>
             <li>The following files were changed:<ol>
                 <li>/includes/classes/observers/auto.paypalrestful.php</li>
                 <li>/includes/languages/english/modules/payment/lang.paypalr.php</li>
                 <li>/includes/modules/payment/paypalr.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/CreatePayPalOrderRequest.php</li>
             </ol></li>
         </ul></li>
         <li>v1.3.0, 2025-10-15 (lat9, drbyte)<ul>
