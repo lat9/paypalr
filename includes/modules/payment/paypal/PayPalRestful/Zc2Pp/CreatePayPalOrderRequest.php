@@ -3,10 +3,10 @@
  * A class to 'convert' a Zen Cart order to a PayPal order-creation request payload
  * for the PayPalRestful (paypalr) Payment Module
  *
- * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.4.0
+ * Last updated: v1.3.1
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -210,16 +210,8 @@ class CreatePayPalOrderRequest extends ErrorInfo
             // Grab the product's 'id' and 'name', for use in any message logs that might arise.
             //
             $products_id = $next_product['id'] ?? 0;
-
-            $name =
-            $next_product['products_name']
-            ?? $next_product['name']
-            ?? '';
-
-            $sku =
-            $next_product['products_model']
-            ?? $next_product['model']
-            ?? '';
+            $name = $next_product['products_name'] ?? $next_product['name'] ?? '';
+            $sku = $next_product['products_model'] ?? $next_product['model'] ?? '';
 
             // -----
             // If the product has attributes, append only the attribute's value to
@@ -264,12 +256,12 @@ class CreatePayPalOrderRequest extends ErrorInfo
             $products_price = $this->getRateConvertedValue($next_product['final_price']);
             $product_is_physical = $this->isProductPhysical($next_product);
             $item = [
-            'name' => substr($name, 0, 127),
-            'sku' => substr($sku, 0, 127),   
-            'quantity' => $quantity,
-            'category' => ($product_is_physical === true) ? 'PHYSICAL_GOODS' : 'DIGITAL_GOODS',
-            'unit_amount' => $this->amount->setValue($products_price),
-            'tax' => $this->amount->setValue($products_price * $tax_rate),
+                'name' => substr($name, 0, 127),
+                'sku' => substr($sku, 0, 127),   
+                'quantity' => $quantity,
+                'category' => ($product_is_physical === true) ? 'PHYSICAL_GOODS' : 'DIGITAL_GOODS',
+                'unit_amount' => $this->amount->setValue($products_price),
+                'tax' => $this->amount->setValue($products_price * $tax_rate),
             ];
 
             // -----
