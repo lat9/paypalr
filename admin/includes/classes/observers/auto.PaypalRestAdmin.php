@@ -3,14 +3,12 @@
  * Part of the paypalr (PayPal Restful Api) payment module.
  * Admin handles package tracking updates.
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.2
  */
 
 use PayPalRestful\Api\Data\CountryCodes;
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Zc2Pp\Amount;
-
-require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
 class zcObserverPaypalRestAdmin extends base
 {
@@ -18,6 +16,8 @@ class zcObserverPaypalRestAdmin extends base
 
     public function __construct()
     {
+        require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
+
         // -----
         // If the paypalr payment-module isn't installed or isn't configured to be enabled,
         // then nothing further to do here.

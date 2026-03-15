@@ -7,7 +7,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.2
  */
 require 'includes/application_top.php';
 
@@ -20,8 +20,6 @@ if (!defined('MODULE_PAYMENT_PAYPALR_STATUS') || MODULE_PAYMENT_PAYPALR_STATUS =
     require DIR_WS_INCLUDES . 'application_bottom.php';
     die();
 }
-
-require DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
 
 use PayPalRestful\Api\PayPalRestfulApi;
 use PayPalRestful\Common\Logger;
@@ -53,7 +51,7 @@ if (!in_array($op, $valid_operations, true)) {
 //
 if ($op === 'cancel' || $op === '3ds_cancel') {
     unset($_SESSION['PayPalRestful']['Order']['PayerAction']);
-    zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT), '', 'SSL');
+    zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
 }
 
 if ($op === 'return' && (!isset($_GET['token'], $_SESSION['PayPalRestful']['Order']['id']) || $_GET['token'] !== $_SESSION['PayPalRestful']['Order']['id'])) {
@@ -75,7 +73,7 @@ if ($op === 'return' && (!isset($_GET['token'], $_SESSION['PayPalRestful']['Orde
 //
 if (!isset($_SESSION['PayPalRestful']['Order']['PayerAction'])) {
     $logger->write('ppr_listener, redirecting to checkout_payment; no PayerAction variables.', true, 'after');
-    zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT), '', 'SSL');
+    zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
 }
 
 // -----
@@ -83,7 +81,7 @@ if (!isset($_SESSION['PayPalRestful']['Order']['PayerAction'])) {
 // customer's PayPal Wallet selection or the customer has completed
 // a 3DS verification for a credit-card payment.
 //
-require DIR_WS_MODULES . 'payment/paypalr.php';
+require FILENAME_PAYPALR_MODULE;
 list($client_id, $secret) = paypalr::getEnvironmentInfo();
 
 $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
@@ -108,7 +106,7 @@ if ($op === '3ds_return') {
     if ($liability_shift === 'UNKNOWN' || ($enrollment_status === 'Y' && $liability_shift === 'NO')) {
         $messageStack->add_session('checkout_payment', MODULE_PAYMENT_PAYPALR_REDIRECT_LISTENER_TRY_AGAIN, 'error');
         unset($_SESSION['PayPalRestful']['Order']['PayerAction'], $_SESSION['PayPalRestful']['Order']['authentication_result']);
-        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT), '', 'SSL');
+        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
     }
 }
 
