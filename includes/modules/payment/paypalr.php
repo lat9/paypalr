@@ -8,11 +8,6 @@
  *
  * Last updated: v1.3.2
  */
-/**
- * Load the support class' auto-loader.
- */
-require_once DIR_FS_CATALOG . DIR_WS_MODULES . 'payment/paypal/pprAutoload.php';
-
 use PayPalRestful\Admin\AdminMain;
 use PayPalRestful\Admin\DoAuthorization;
 use PayPalRestful\Admin\DoCapture;
