@@ -2,7 +2,7 @@
 /**
  * Page-Redirect Listener for PayPal RESTful API payment method (paypalr)
  *
- * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @copyright Copyright 2003-2026 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
@@ -82,7 +82,7 @@ if (!isset($_SESSION['PayPalRestful']['Order']['PayerAction'])) {
 // a 3DS verification for a credit-card payment.
 //
 require FILENAME_PAYPALR_MODULE;
-list($client_id, $secret) = paypalr::getEnvironmentInfo();
+[$client_id, $secret] = paypalr::getEnvironmentInfo();
 
 $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
 $ppr->setKeepTxnLinks(true);
@@ -106,7 +106,7 @@ if ($op === '3ds_return') {
     if ($liability_shift === 'UNKNOWN' || ($enrollment_status === 'Y' && $liability_shift === 'NO')) {
         $messageStack->add_session('checkout_payment', MODULE_PAYMENT_PAYPALR_REDIRECT_LISTENER_TRY_AGAIN, 'error');
         unset($_SESSION['PayPalRestful']['Order']['PayerAction'], $_SESSION['PayPalRestful']['Order']['authentication_result']);
-        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
+        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT), '', 'SSL');
     }
 }
 
@@ -185,7 +185,7 @@ $logger->write("Order's status set to {$order_status['status']}; posting back to
 }
     </style>
     <div id="lds-wrapper"><div class="lds-ring"><div></div><div></div><div></div><div></div></div></div>
-    <form action="<?php echo zen_href_link($redirect_page); ?>" name="transfer_form" method="post">
+    <form action="<?= zen_href_link($redirect_page) ?>" name="transfer_form" method="post">
 <?php
 foreach ($_SESSION['PayPalRestful']['Order']['PayerAction']['savedPosts'] as $key => $value) {
     if (is_string($value)) {
