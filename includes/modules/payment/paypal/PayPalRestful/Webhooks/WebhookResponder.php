@@ -9,7 +9,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.2
  */
 
 namespace PayPalRestful\Webhooks;
@@ -81,6 +81,15 @@ class WebhookResponder
     {
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
 
+        if (!isset($headers['PAYPAL-TRANSMISSION-ID'], $headers['PAYPAL-TRANSMISSION-TIME'], $headers['PAYPAL-TRANSMISSION-SIG'], $headers['PAYPAL-CERT-URL'])) {
+            return null; // unable to do CRC check, so we will fail over to PostBack approach
+        }
+        if (empty($this->webhook_listener_subscribe_id)) {
+            return null; // we don't have a webhook listener subscribe ID set, so we will fail over to PostBack approach
+        }
+        if (!function_exists('openssl_verify')) {
+            return null; // OpenSSL functions not available, so we will fail over to PostBack approach
+        }
         $transmissionId = $headers['PAYPAL-TRANSMISSION-ID'];
         $timestamp = $headers['PAYPAL-TRANSMISSION-TIME'];
         $crc = \hexdec(\hash('crc32b', $this->webhook->getRawBody()));
@@ -92,10 +101,23 @@ class WebhookResponder
 
         // @TODO - consider download and cache the public key, from the URL, instead of retrieving fresh in real time
         $pem_cert = $this->read_url($publicKeyUrl);
+        if ($pem_cert === false) {
+            return null; // unable to retrieve cert, so we will fail over to PostBack approach
+        }
 
         $publicKey = openssl_get_publickey($pem_cert);
+        if ($publicKey === false) {
+            // openssl_get_publickey error; we can log this if needed, but for now we will just fail over to PostBack approach
+            //$this->ppr_logger->write('OpenSSL error retrieving public key: ' . openssl_error_string(), false, 'before');
+            return null;
+        }
 
         $result = openssl_verify($calculatedSignature, $decodedSignature, $publicKey, OPENSSL_ALGO_SHA256);
+        if ($result === -1) {
+            // openssl_verify error; we can log this if needed, but for now we will just fail over to PostBack approach
+            //$this->ppr_logger->write('OpenSSL error during webhook CRC check: ' . openssl_error_string(), false, 'before');
+            return null;
+        }
         return $result === 1;
     }
 
@@ -116,7 +138,7 @@ class WebhookResponder
         ];
 
         // Load the PayPal RESTful API class and get the credentials, so we can make the postback using the current access token
-        require DIR_WS_MODULES . 'payment/paypalr.php';
+        require FILENAME_PAYPALR_MODULE;
         list($client_id, $secret) = \paypalr::getEnvironmentInfo();
         $ppr = new PayPalRestfulApi(MODULE_PAYMENT_PAYPALR_SERVER, $client_id, $secret);
 
