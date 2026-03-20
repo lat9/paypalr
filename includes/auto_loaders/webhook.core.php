@@ -5,7 +5,7 @@
  * @copyright Copyright 2003-2025 Zen Cart Development Team
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.2.2
+ * Last updated: v1.3.2
  */
 if (!defined('IS_ADMIN_FLAG')) {
     die('Illegal Access');
@@ -30,6 +30,24 @@ $autoLoadConfig[0][] = [
 $autoLoadConfig[0][] = [
     'autoType' => 'class',
     'loadFile' => 'class.phpmailer.php',
+];
+/**
+ * Breakpoint 5.
+ *
+ * $zcDate = new zcDate(); ... will be re-initialized when/if the require_languages.php module is run.
+ *
+ */
+//- zcDate class loaded via psr4Autoload.php; reloading
+//- here for older versions of Zen Cart that don't load the
+//- class via an autoloader.
+$autoLoadConfig[5][] = [
+    'autoType' => 'class',
+    'loadFile' => 'zcDate.php',
+];
+$autoLoadConfig[5][] = [
+    'autoType' => 'classInstantiate',
+    'className' => 'zcDate',
+    'objectName' => 'zcDate',
 ];
 /**
  * Breakpoint 30.
