@@ -72,15 +72,26 @@ jQuery(function() {
             }
 
             // Extract numeric price from the element text (strip currency symbols, etc.)
-            let price = priceElement.textContent.replace(/[^\d.,]/g, '');
+            let price = priceElement.textContent.replace(/[^\d.,]/g, '').trim();
 
-            // Clean whitespace
-            price = price.trim();
+            // Detect decimal separator (last occurrence of . or ,)
+            let lastDot = price.lastIndexOf('.');
+            let lastComma = price.lastIndexOf(',');
 
-            // Convert to float safely
-            let numericPrice = parseFloat(
-            price.replace(/,/g, '') // remove thousands separators
-            );
+            let normalized;
+
+            // If comma is the decimal separator (e.g. 2,18 or 1.234,56)
+            if (lastComma > lastDot) {
+            normalized = price
+            .replace(/\./g, '')  // remove thousands separators
+            .replace(',', '.');  // convert decimal to dot
+            } else {
+            // Dot is decimal separator (e.g. 2.18 or 1,234.56)
+            normalized = price
+           .replace(/,/g, '');   // remove thousands separators
+            }
+
+            let numericPrice = parseFloat(normalized);
 
             // If invalid, skip
             if (isNaN(numericPrice)) {
@@ -88,7 +99,7 @@ jQuery(function() {
             return true;
             }
 
-            // Format to PayPal-required string (2 decimal places, dot separator)
+            // Format to PayPal-required string
             price = numericPrice.toFixed(2);
 
             // Apply attributes for PayPal messaging
