@@ -1,5 +1,5 @@
 // PayPal PayLater messaging
-// Last updated: v1.3.1
+// Last updated: v1.3.2
 if (!paypalMessagesPageType.length) {
     paypalMessagesPageType = "None";
 }
@@ -82,21 +82,21 @@ jQuery(function() {
 
             // If comma is the decimal separator (e.g. 2,18 or 1.234,56)
             if (lastComma > lastDot) {
-            normalized = price
-            .replace(/\./g, '')  // remove thousands separators
-            .replace(',', '.');  // convert decimal to dot
+                normalized = price
+                    .replace(/\./g, '')  // remove thousands separators
+                    .replace(',', '.');  // convert decimal to dot
             } else {
-            // Dot is decimal separator (e.g. 2.18 or 1,234.56)
-            normalized = price
-           .replace(/,/g, '');   // remove thousands separators
+                // Dot is decimal separator (e.g. 2.18 or 1,234.56)
+                normalized = price
+                   .replace(/,/g, '');   // remove thousands separators
             }
 
             let numericPrice = parseFloat(normalized);
 
             // If invalid, skip
             if (isNaN(numericPrice)) {
-            console.warn('Invalid price detected:', price);
-            return true;
+                console.warn('Invalid price detected:', price);
+                return true;
             }
 
             // Format to PayPal-required string
