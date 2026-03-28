@@ -71,31 +71,29 @@ jQuery(function() {
                 return true;
             }
 
-            // First, use .replace to remove characters other than
-            // numerics and comma/period separators (e.g. currency symbols).
+            // Extract numeric price from the element text (strip currency symbols, etc.)
             let price = priceElement.textContent.replace(/[^\d.,]/g, '');
 
-            // Next, split the price value into its 2-digit decimal digits (at
-            // the end of string) and its integral portion (to the left of the
-            // decimal point (either a period or comma).
-            //
-            // There "should be" 3 pieces (entire string, integral portion and decimal portion)
-            // returned by the match; if not, cycle to the next price
-            let pieces = price.match(/^([\d.,]+)[.,](\d{2})$/);
-            console.info('Msgs Loop ' + index + ': Price ' + price + ', Pieces: ' + pieces);
-            if (pieces.length !== 3) {
-                return true;
+            // Clean whitespace
+            price = price.trim();
+
+            // Convert to float safely
+            let numericPrice = parseFloat(
+            price.replace(/,/g, '') // remove thousands separators
+            );
+
+            // If invalid, skip
+            if (isNaN(numericPrice)) {
+            console.warn('Invalid price detected:', price);
+            return true;
             }
 
-            // Finally, form the price to be sent to PayPal, removing any '.,' characters
-            // from the integral value and using a period as the decimal separator.
-            price = pieces[1].replace(/[.,]/g, '')+'.'+pieces[2];
-            console.info('Reformatted price: '+price);
+            // Format to PayPal-required string (2 decimal places, dot separator)
+            price = numericPrice.toFixed(2);
 
+            // Apply attributes for PayPal messaging
             $addTo = $findInContainer.length > 1 ? jQuery(element) : $output;
 
-            // The PayPal SDK monitors message elements for changes to its attributes such as data-pp-amount, which we add here,
-            // so their messaging is updated automatically to reflect this amount in whatever messaging PayPal displays.
             $addTo.attr('data-pp-amount', price);
             $addTo.attr('data-pp-currency', paypalPayLaterCurrency);
         });
