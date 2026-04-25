@@ -1811,7 +1811,7 @@ class paypalr extends base
 
     protected function obfuscateCcNumber(string $cc_number): string
     {
-        return substr($cc_number, 0, 4) . str_repeat('X', (strlen($cc_number) - 8)) . substr($cc_number, -4);
+        return substr($cc_number, 0, 6) . str_repeat('X', (strlen($cc_number) - 10)) . substr($cc_number, -4);
     }
 
     /**
