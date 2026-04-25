@@ -201,14 +201,16 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.2-beta1, 2026-03-20 (lat9,)<ul>
+        <li>v1.3.2-beta2, 2026-04-25 (lat9, andy-1977 and drbyte)<ul>
             <li>BUGFIX: Restore zcDate instantiation during webhook processing to correct fatal PHP errors.</li>
             <li>INTROP: Align with updates from the encapsulated version included in Zen Cart 2.2.0 and later.</li>
+            <li>BUGFIX: Correct wrong amounts on PayLater messaging.</li>
             <li>The following files were changed:<ol>
                 <li>/includes/auto_loaders/webhook.core.php</li>
                 <li>/includes/classes/observers/auto.paypalrestful.php</li>
                 <li>/includes/modules/payment/paypalr.php</li>
                 <li>/includes/modules/payment/paypal/pprAutoload.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/ppr_listener.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/ppr_webhook.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookResponder.php</li>
