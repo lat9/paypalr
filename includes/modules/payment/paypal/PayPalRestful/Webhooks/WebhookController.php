@@ -5,11 +5,11 @@
  * necessary steps for validation and dispatching based on the
  * nature of the webhook content.
  *
- * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.2.2/v1.3.0
+ * Last updated: v1.3.3
  */
 
 namespace PayPalRestful\Webhooks;
@@ -26,8 +26,8 @@ class WebhookController
 
         // Inspect and collect webhook details
         $request_method = $_SERVER['REQUEST_METHOD'];
-        $request_headers = getallheaders();
-        $request_body = file_get_contents('php://input');
+        $request_headers = getallheaders() ?: [];
+        $request_body = file_get_contents('php://input') ?: '';
         $json_body = json_decode($request_body, true);
         $user_agent = $_SERVER['HTTP_USER_AGENT'];
         $event = $json_body['event_type'] ?? '(event not determined)';
@@ -38,7 +38,7 @@ class WebhookController
         $this->ppr_logger = new Logger($logIdentifier);
 
         // Enable logging, if enabled via configuration
-        if (strpos(MODULE_PAYMENT_PAYPALR_DEBUGGING, 'Log') === 0) {
+        if (str_starts_with(MODULE_PAYMENT_PAYPALR_DEBUGGING, 'Log')) {
             $this->ppr_logger->enableDebug();
         }
 
@@ -74,6 +74,24 @@ class WebhookController
         }
 
         $this->ppr_logger->write("\n\n" . 'webhook verification passed', false, 'before');
+
+        // -----
+        // Idempotency guard. PayPal delivers webhook events at-least-once (it
+        // re-sends on timeout or any non-2xx response) and a signed payload can be
+        // replayed verbatim, so the same event-id must not be processed twice.
+        // Re-processing would create duplicate order-status records, re-send
+        // customer/merchant emails and re-fire the funds-captured notifier.
+        //
+        // Ensure the table exists first, then bail out (acknowledging the request)
+        // if we've already recorded this event-id. The column is varchar(64), so
+        // the lookup value is truncated to match what saveToDatabase() stores.
+        //
+        $this->createDatabaseTable();
+        $webhook_id = substr((string)($json_body['id'] ?? ''), 0, 64);
+        if ($webhook_id !== '' && $this->alreadyProcessed($webhook_id)) {
+            $this->ppr_logger->write("ppr_webhook DUPLICATE event ignored (webhook_id: $webhook_id).", false, 'before');
+            return true;
+        }
 
         // Log that we received a validated webhook
         $this->saveToDatabase($user_agent, $request_method, $request_body, $request_headers);
@@ -135,6 +153,27 @@ class WebhookController
 
         // store
         zen_db_perform(TABLE_PAYPAL_WEBHOOKS, $sql_data_array);
+    }
+
+    /**
+     * Determine whether a webhook event-id has already been recorded.
+     *
+     * Used for idempotency: PayPal re-delivers events and a signed payload can be
+     * replayed, so the same event-id must not be processed twice. The caller is
+     * responsible for ensuring the table exists (see createDatabaseTable()).
+     */
+    protected function alreadyProcessed(string $webhook_id)
+    {
+        global $db;
+
+        $webhook_id = $db->prepare_input($webhook_id);
+        $existing = $db->ExecuteNoCache(
+            "SELECT id
+               FROM " . TABLE_PAYPAL_WEBHOOKS . "
+              WHERE webhook_id = '$webhook_id'
+              LIMIT 1"
+        );
+        return !$existing->EOF;
     }
 
     /**

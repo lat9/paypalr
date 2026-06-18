@@ -2,11 +2,11 @@
 /**
  * A data class for Amount types used by the PayPalRestful (paypalr) Payment Module
  *
- * @copyright Copyright 2023 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.3
  */
 namespace PayPalRestful\Zc2Pp;
 
@@ -105,8 +105,8 @@ class Amount
 
         self::$defaultCurrencyCode = [
             'code' => $default_currency,
-            'no_decimals' => isset(self::$defaultCurrencyCode[$default_currency]['no_decimals']),
-            'in_country_only' => isset(self::$defaultCurrencyCode[$default_currency]['in_country_only']),
+            'no_decimals' => isset(self::$supportedCurrencyCodes[$default_currency]['no_decimals']),
+            'in_country_only' => isset(self::$supportedCurrencyCodes[$default_currency]['in_country_only']),
         ];
 
         $this->amount['currency_code'] = $default_currency;
@@ -135,10 +135,10 @@ class Amount
     public function setValue(float $value): array
     {
         $amount_value = number_format($value, 2, '.', '');
-        if (self::$defaultCurrencyCode['no_decimals'] === true && strpos($value, '.00') === false) {
+        if (self::$defaultCurrencyCode['no_decimals'] === true) {
 //            $default_currency_code = self::$defaultCurrencyCode['code'];
 //            $this->log->write("Amount::setValue, value ($amount_value) has unsupported decimal digits for currency $default_currency_code; value is converted to integer.");
-            $amount_value = (string)((int)$value);
+            $amount_value = (string)((int)round($value));
         }
         $this->amount['value'] = $amount_value;
 

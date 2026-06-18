@@ -2,11 +2,11 @@
 /**
  * PayPal REST API Webhooks
  *
- * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: DrByte June 2025 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.3
  */
 
 namespace PayPalRestful\Webhooks\Events;
@@ -50,7 +50,7 @@ class PaymentCaptureReversed extends WebhookHandlerContract
         $comments =
             "Notice: REFUNDED/REVERSED. Trans ID: $txnID \n" .
             "Amount: $amount\n$summary\n";
-        $admin_message = $this->data['summary'] . "\n" . $this->data['note_to_payer'];
+        $admin_message = $this->data['summary'] . "\n" . ($this->data['resource']['note_to_payer'] ?? '');
         $status = (int)MODULE_PAYMENT_PAYPALR_REFUNDED_STATUS_ID;
         $status = ($status > 0) ? $status : 1;
 

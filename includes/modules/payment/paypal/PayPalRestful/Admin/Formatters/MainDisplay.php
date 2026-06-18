@@ -7,7 +7,7 @@
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: Aug 2025 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.3
  */
 namespace PayPalRestful\Admin\Formatters;
 
@@ -170,7 +170,7 @@ class MainDisplay
                     //
                     case 'txn_id':
                         $value =
-                            ((empty($next_txn['parent_txn_id'])) ? '&mdash;' : $next_txn['parent_txn_id']) .
+                            ((empty($next_txn['parent_txn_id'])) ? '&mdash;' : zen_output_string_protected($next_txn['parent_txn_id'])) .
                             '<br>' .
                             $value;
                         break;
@@ -180,18 +180,18 @@ class MainDisplay
                     // email-address and payer-id in a single column.
                     //
                     case 'payer_email':
-                        $first_name = $next_txn['first_name'];
-                        $last_name = $next_txn['last_name'];
+                        $first_name = zen_output_string_protected($next_txn['first_name']);
+                        $last_name = zen_output_string_protected($next_txn['last_name']);
                         $payment_type = $next_txn['payment_type'];
-                        $payer_email = $value;
-                        if (($first_name . $last_name) !== '') {
+                        $payer_email = zen_output_string_protected($value);
+                        if (($next_txn['first_name'] . $next_txn['last_name']) !== '') {
                             $value = $first_name . ' ' . $last_name;
                             if ($payment_type === 'paypal') {
-                                $value .= ' (' . $next_txn['payer_status'] . ')<br>' . $payer_email;
+                                $value .= ' (' . zen_output_string_protected($next_txn['payer_status']) . ')<br>' . $payer_email;
                             }
                         }
                         if ($payment_type === 'paypal') {
-                            $value .= '<br>' . $next_txn['payer_id'];
+                            $value .= '<br>' . zen_output_string_protected($next_txn['payer_id']);
                         }
                         break;
 
@@ -201,7 +201,7 @@ class MainDisplay
                     //
                     case 'payment_status':
                         if ($next_txn['pending_reason'] !== null) {
-                            $value .= '<br><small>' . $next_txn['pending_reason'] . '</small>';
+                            $value .= '<br><small>' . zen_output_string_protected($next_txn['pending_reason']) . '</small>';
                         }
                         break;
 
@@ -246,11 +246,11 @@ class MainDisplay
                     break;
 
                 case 'AUTHORIZE':
-                    list($action_buttons, $modals) = $this->createAuthButtonsAndModals($txn_index, $main_txn_id, $days_to_settle);
+                    [$action_buttons, $modals] = $this->createAuthButtonsAndModals($txn_index, $main_txn_id, $days_to_settle);
                     break;
 
                 case 'CAPTURE':
-                    list($action_buttons, $modals) = $this->createCaptureButtonsAndModals($txn_index);
+                    [$action_buttons, $modals] = $this->createCaptureButtonsAndModals($txn_index);
                     break;
 
                 case 'REFUND':
@@ -806,6 +806,7 @@ class MainDisplay
                 // -----
                 // Calculations for the current PayPal settled amounts.
                 //
+                $value = zen_output_string_protected((string)($value ?? ''));
                 switch ($next_field['field']) {
                     // -----
                     // Special case for 'payment_status' field, it's followed by its "pending_reason",
@@ -813,12 +814,12 @@ class MainDisplay
                     //
                     case 'payment_status':
                         if ($next_txn['pending_reason'] !== null) {
-                            $value .= '<br><small>' . $next_txn['pending_reason'] . '</small>';
+                            $value .= '<br><small>' . zen_output_string_protected($next_txn['pending_reason']) . '</small>';
                         }
                         break;
 
                     // -----
-                    // Capture any exchange_rate, since refunds are not converted in the
+                    // Capture any exchange_rate, since refunds are not converted in
                     // the site's settlement currency.
                     //
                     case 'exchange_rate':

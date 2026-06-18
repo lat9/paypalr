@@ -91,7 +91,7 @@ table table {
 
 <body>
     <h1>PayPal RESTful Payment Module (<var>paypalr</var>) for Zen Cart 1.5.8a through 2.1.0</h1>
-    <h3>Version 1.3.2</h3>
+    <h3>Version 1.3.3</h3>
     <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php/229886-PayPal-RESTful-API-Payment-Module" target="_blank">https://www.zen-cart.com/showthread.php/229886-PayPal-RESTful-API-Payment-Module</a></p>
     <p>Zen Cart Download Link: <a href="https://www.zen-cart.com/downloads.php?do=file&id=2382" target="_blank">https://www.zen-cart.com/downloads.php?do=file&id=2382</a></p>
     <p>GitHub repository: <a href="https://github.com/lat9/paypalr" target="_blank">https://github.com/lat9/paypalr</a></p>
@@ -201,6 +201,22 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
+        <li>v1.3.3-beta1, 2026-06-17 (lat9 and drbyte)<ul>
+            <li>BUGFIX: Various sanitizing changes, ported from <a href="https://github.com/zencart/paypalr" target="_blank">the encapsulated version.</a></li>
+            <li>The following files were changed:<ol>
+                <li>/includes/modules/payment/paypalr.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/MainDisplay.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoAuthorization.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoCapture.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoRefund.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/GetPayPalOrderTransactions.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureReversed.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookController.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookResponder.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/Amount.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Zc2Pp/CreatePayPalOrderRequest.php</li>
+            </ol></li>
+        </ul></li>
         <li>v1.3.2, 2026-06-15 (lat9, andy-1977 and drbyte)<ul>
             <li>BUGFIX: Restore zcDate instantiation during webhook processing to correct fatal PHP errors.</li>
             <li>INTROP: Align with updates from the encapsulated version included in Zen Cart 2.2.0 and later.</li>

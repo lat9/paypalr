@@ -3,11 +3,11 @@
  * A class that provides the actions needed to authorize a payment for an order placed with
  * the PayPal Restful payment module.
  *
- * @copyright Copyright 2023-2024 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.0.0
+ * Last updated: v1.3.3
  */
 namespace PayPalRestful\Admin;
 
@@ -77,8 +77,8 @@ class DoAuthorization
         //
         $db->Execute(
             "UPDATE " . TABLE_PAYPAL . "
-                SET parent_txn_id = '" . $_POST['auth_txn_id'] . "'
-              WHERE txn_id = '" . $auth_response['id'] . "'
+                SET parent_txn_id = '" . zen_db_input($_POST['auth_txn_id']) . "'
+              WHERE txn_id = '" . zen_db_input($auth_response['id']) . "'
               LIMIT 1"
         );
 
