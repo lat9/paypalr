@@ -7,7 +7,7 @@
  * to determine an order's overall value and what amounts each order-total
  * module has added/subtracted to the order's overall value.
  *
- * Last updated: v1.3.2
+ * Last updated: v1.3.3
  */
 
 use PayPalRestful\Api\Data\CountryCodes;
@@ -470,10 +470,10 @@ class zcObserverPaypalrestful extends base
 <script title="PayPal Pay Later Messaging">
     // PayPal PayLater messaging set up
     let paypalMessagesPageType = '<?= $pageType ?>';
-    let paypalMessageableOverride = <?= $override ? json_encode($override) : '{}' ?>;
-    let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles) : '{}' ?>;
-    let $messagableObjects = <?= json_encode($messagableObjects) ?>;
-    let paypalPayLaterCurrency = '<?= $_SESSION['currency'] ?>';
+    let paypalMessageableOverride = <?= $override ? json_encode($override, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) : '{}' ?>;
+    let paypalMessageableStyles = <?= !empty($messageStyles) ? json_encode($messageStyles, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) : '{}' ?>;
+    let $messagableObjects = <?= json_encode($messagableObjects, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    let paypalPayLaterCurrency = <?= json_encode($_SESSION['currency'] ?? '') ?>;
     <?= file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.jssdk_messages.js'); ?>
 </script>
 <?php

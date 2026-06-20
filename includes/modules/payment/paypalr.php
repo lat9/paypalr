@@ -28,7 +28,7 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    const CURRENT_VERSION = '1.3.3-beta1';
+    const CURRENT_VERSION = '1.3.3-beta2';
 
     const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
@@ -417,7 +417,7 @@ class paypalr extends base
             return;
         }
 
-        global $db;
+        global $db, $sniffer;
 
         // -----
         // Check for version-specific configuration updates.
@@ -461,6 +461,32 @@ class paypalr extends base
                           WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_PAYLATER_MESSAGING'
                           LIMIT 1"
                     );
+
+                /* falls through */
+
+                // -----
+                // v1.3.3/2.1.0: Add UNIQUE constraint on paypal_webhooks.webhook_id so the
+                // idempotency guard in WebhookController::saveToDatabase() is atomic
+                // (duplicate inserts are rejected/ignored by the unique key).
+                //
+                // Deduplicate first: keep the earliest record for each event-id.
+                //
+                case version_compare(MODULE_PAYMENT_PAYPALR_VERSION, '1.3.3', '<'): //- Fall through from above
+                    defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
+                    if ($sniffer->table_exists(TABLE_PAYPAL_WEBHOOKS)) {
+                        $db->Execute(
+                            "DELETE w1 FROM " . TABLE_PAYPAL_WEBHOOKS . " w1
+                               INNER JOIN " . TABLE_PAYPAL_WEBHOOKS . " w2
+                                  ON w2.webhook_id = w1.webhook_id
+                                 AND w2.id < w1.id"
+                        );
+                        if ($sniffer->index_exists(TABLE_PAYPAL_WEBHOOKS, 'idx_pprwebhook_unique') === false) {
+                            $db->Execute(
+                                "ALTER TABLE " . TABLE_PAYPAL_WEBHOOKS . "
+                                   ADD UNIQUE KEY idx_pprwebhook_unique (webhook_id)"
+                            );
+                        }
+                    }
 
                 /* falls through */
                 default:
@@ -576,7 +602,7 @@ class paypalr extends base
         //
         // Determine which (live vs. sandbox) credentials are in use.
         //
-        list($client_id, $secret) = self::getEnvironmentInfo();
+        [$client_id, $secret] = self::getEnvironmentInfo();
 
         // -----
         // Ensure that the current environment's credentials are set and, if so,
@@ -1862,6 +1888,7 @@ class paypalr extends base
      */
     public function after_order_create($orders_id)
     {
+        $orders_id = (int)$orders_id;
         $this->orderInfo['orders_id'] = $orders_id;
 
         $purchase_unit = $this->orderInfo['purchase_units'][0];
@@ -2362,6 +2389,14 @@ class paypalr extends base
         }
 
         $db->Execute("DELETE FROM " . TABLE_CONFIGURATION . " WHERE configuration_key LIKE 'MODULE\_PAYMENT\_PAYPALR\_%'");
+
+        // -----
+        // Drop the webhook-log table created by this plugin.  It is not a Zen Cart
+        // core table, so removing it on uninstall avoids leaving orphaned data in
+        // the database.
+        //
+        defined('TABLE_PAYPAL_WEBHOOKS') or define('TABLE_PAYPAL_WEBHOOKS', DB_PREFIX . 'paypal_webhooks');
+        $db->Execute("DROP TABLE IF EXISTS " . TABLE_PAYPAL_WEBHOOKS);
 
         // -----
         // Starting with v1.1.1, removing the payment module includes deleting its root-directory

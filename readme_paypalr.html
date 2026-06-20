@@ -203,13 +203,20 @@ table table {
     <ul>
         <li>v1.3.3-beta1, 2026-06-17 (lat9 and drbyte)<ul>
             <li>BUGFIX: Various sanitizing changes, ported from <a href="https://github.com/zencart/paypalr" target="_blank">the encapsulated version.</a></li>
+            <li>BUGFIX: Various 'hardening' changes, also ported from above.</li>
             <li>The following files were changed:<ol>
+                <li>/includes/classes/observers/auto.paypalrestful.php</li>
                 <li>/includes/modules/payment/paypalr.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/ppr_listener.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/ppr_webhook.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/Formatters/MainDisplay.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoAuthorization.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoCapture.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoRefund.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Admin/DoVoid.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Admin/GetPayPalOrderTransactions.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Api/PayPalRestfulApi.php</li>
+                <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureCompleted.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/Events/PaymentCaptureReversed.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookController.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Webhooks/WebhookResponder.php</li>

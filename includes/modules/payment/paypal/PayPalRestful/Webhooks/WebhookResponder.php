@@ -78,6 +78,11 @@ class WebhookResponder
         if ($valid !== null) {
             // send a 200 response to acknowledge that we received the webhook
             http_response_code(200);
+        } else {
+            // Verification could not complete (cert unreachable, OpenSSL absent, access-token
+            // invalid, etc.).  Signal a transient server error so PayPal retries delivery
+            // rather than silently treating the unverified event as acknowledged.
+            http_response_code(500);
         }
 
         return $valid;
@@ -206,19 +211,29 @@ class WebhookResponder
      */
     protected function read_url($url)
     {
+        // Reconstruct a canonical URL from parse_url() components so that the host seen
+        // by the fetcher is identical to the one validated by validateCertUrl(), eliminating
+        // any parse_url-vs-libcurl authority-parsing differential.
+        $p = parse_url($url);
+        $canonical  = strtolower($p['scheme'] ?? 'https') . '://' . strtolower(rtrim($p['host'] ?? '', '.'));
+        $canonical .= isset($p['port']) ? ':' . (int)$p['port'] : '';
+        $canonical .= $p['path'] ?? '/';
+        $canonical .= isset($p['query']) ? '?' . $p['query'] : '';
+
         // Try file_get_contents first
         $result = false;
         if (ini_get('allow_url_fopen')) {
             $context = stream_context_create([
                 'http' => ['follow_location' => 0, 'timeout' => 10],
+                'ssl'  => ['verify_peer' => true, 'verify_peer_name' => true],
             ]);
-            $result = file_get_contents($url, false, $context);
+            $result = file_get_contents($canonical, false, $context);
         }
         if ($result !== false && $result !== '') {
             return $result;
         }
         // Fallback to curl — redirects disabled so a paypal.com 3xx cannot bounce to an internal host
-        $ch = curl_init($url);
+        $ch = curl_init($canonical);
         if ($ch === false) {
             return false;
         }
