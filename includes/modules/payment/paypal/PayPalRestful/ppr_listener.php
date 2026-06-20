@@ -7,7 +7,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
  *
- * Last updated: v1.3.2
+ * Last updated: v1.3.3
  */
 require 'includes/application_top.php';
 
@@ -100,13 +100,35 @@ if ($order_status === false) {
 // https://developer.paypal.com/docs/checkout/advanced/customize/3d-secure/response-parameters/
 //
 if ($op === '3ds_return') {
-    $auth_result = $order_status['payment_source']['card']['authentication_result'];
-    $liability_shift = $auth_result['liability_shift'];
-    $enrollment_status = $auth_result['three_d_secure']['enrollment_status'];
-    if ($liability_shift === 'UNKNOWN' || ($enrollment_status === 'Y' && $liability_shift === 'NO')) {
+    // -----
+    // The card's authentication_result drives whether the 3DS-verified order may
+    // proceed.  Read each element defensively: a legitimate 3ds_return always carries
+    // a populated authentication_result, so a missing/partial result means we cannot
+    // confirm the payment's authentication state and must fail *closed* — sending the
+    // customer back to try again rather than letting an unverified card order through.
+    //
+    $auth_result = $order_status['payment_source']['card']['authentication_result'] ?? [];
+    $liability_shift = $auth_result['liability_shift'] ?? '';
+    $enrollment_status = $auth_result['three_d_secure']['enrollment_status'] ?? '';
+
+    // -----
+    // Reject unless the result is unambiguously safe to proceed:
+    //   POSSIBLE           — issuer accepted liability; always safe.
+    //   NO + enrolled='N'  — card is not enrolled in 3DS; NO shift is expected and
+    //                        acceptable (issuer cannot do 3DS, so merchant proceeds
+    //                        knowing they hold liability).
+    // Everything else fails closed:
+    //   NO  + enrolled='Y' — enrolled card, liability did not shift; reject.
+    //   NO  + enrolled=''  — enrollment unknown/missing; cannot confirm non-enrolled
+    //                        status, so treat as risky and reject (Codex P2).
+    //   UNKNOWN            — PayPal could not determine the liability shift; reject.
+    //   ''  (missing)      — partial/absent authentication_result; reject.
+    //
+    if (!($liability_shift === 'POSSIBLE' || ($enrollment_status === 'N' && $liability_shift === 'NO'))) {
+        $logger->write("ppr_listener, 3ds_return authentication not confirmed (liability_shift: '$liability_shift', enrollment_status: '$enrollment_status'); redirecting to checkout_payment.", true, 'after');
         $messageStack->add_session('checkout_payment', MODULE_PAYMENT_PAYPALR_REDIRECT_LISTENER_TRY_AGAIN, 'error');
         unset($_SESSION['PayPalRestful']['Order']['PayerAction'], $_SESSION['PayPalRestful']['Order']['authentication_result']);
-        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT), '', 'SSL');
+        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
     }
 }
 
@@ -120,6 +142,17 @@ $_SESSION['PayPalRestful']['Order']['status'] = $order_status['status'];
 if ($op === 'return') {
     $_SESSION['PayPalRestful']['Order']['wallet_payment_confirmed'] = true;
 } else {
+    // -----
+    // ccInfo is always written to PayerAction at the point the 3DS link is issued
+    // (paypalr.php before_process).  Its absence here means the session is corrupted;
+    // treat it the same as other missing-PayerAction cases and redirect rather than
+    // storing an empty array that would let card processing proceed with no card fields.
+    //
+    if (!isset($_SESSION['PayPalRestful']['Order']['PayerAction']['ccInfo'])) {
+        $logger->write('ppr_listener, 3ds_return missing ccInfo in PayerAction; redirecting to checkout_payment.', true, 'after');
+        unset($_SESSION['PayPalRestful']['Order']['PayerAction']);
+        zen_redirect(zen_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
+    }
     $_SESSION['PayPalRestful']['Order']['3DS_response'] = $_SESSION['PayPalRestful']['Order']['PayerAction']['ccInfo'];
     $_SESSION['PayPalRestful']['Order']['authentication_result'] = $auth_result;
 }

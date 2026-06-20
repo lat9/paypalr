@@ -3,11 +3,11 @@
  * A class that provides the actions needed to void an order placed with
  * the PayPal Restful payment module.
  *
- * @copyright Copyright 2023-2024 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.0.2
+ * Last updated: v1.3.3
  */
 namespace PayPalRestful\Admin;
 
@@ -20,6 +20,10 @@ class DoVoid
     public function __construct(int $oID, PayPalRestfulApi $ppr, string $module_name, string $module_version)
     {
         global $db, $messageStack;
+
+        if (!defined('IS_ADMIN_FLAG') || IS_ADMIN_FLAG !== true) {
+            return;
+        }
 
         if (!isset($_POST['ppr-void-id'], $_POST['doVoidOid'], $_POST['ppr-void-note']) || $oID !== (int)$_POST['doVoidOid']) {
             $messageStack->add_session(MODULE_PAYMENT_PAYPALR_VOID_PARAM_ERROR, 'error');

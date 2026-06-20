@@ -22,6 +22,10 @@ class DoAuthorization
     {
         global $db, $messageStack;
 
+        if (!defined('IS_ADMIN_FLAG') || IS_ADMIN_FLAG !== true) {
+            return;
+        }
+
         if (!isset($_POST['ppr-amount'], $_POST['doAuthOid'], $_POST['auth_txn_id']) || $oID !== (int)$_POST['doAuthOid']) {
             $messageStack->add_session(sprintf(MODULE_PAYMENT_PAYPALR_REAUTH_PARAM_ERROR, 1), 'error');
             return;

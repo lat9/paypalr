@@ -8,11 +8,11 @@
  * - https://stackoverflow.com/questions/14451401/how-do-i-make-a-patch-request-in-php-using-curl
  * - https://developer.paypal.com/docs/checkout/standard/customize/
  *
- * @copyright Copyright 2023-2025 Zen Cart Development Team
+ * @copyright Copyright 2023-2026 Zen Cart Development Team
  * @license https://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: lat9 2023 Nov 16 Modified in v2.0.0 $
  *
- * Last updated: v1.3.0
+ * Last updated: v1.3.3
  */
 namespace PayPalRestful\Api;
 
@@ -116,6 +116,8 @@ class PayPalRestfulApi extends ErrorInfo
         CURLOPT_FRESH_CONNECT => true,
         CURLOPT_HEADER => 0,
         CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_TIMEOUT => 45,
     ];
 
