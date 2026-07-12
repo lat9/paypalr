@@ -98,16 +98,16 @@ table table {
 
     <h2>Purpose</h2>
     <p>This Zen Cart payment module combines the processing for the <b>PayPal Payments Pro</b> (<var>paypaldp</var>) and <b>PayPal Express Checkout</b> (<var>paypalwpp</var>) payment modules that are currently built into the Zen Cart distribution.  Instead of using the older NVP (<b>N</b>ame <b>V</b>alue <b>P</b>air) methods to communicate with PayPal, this payment module uses PayPal's now-current <a href="https://developer.paypal.com/api/rest/" target="_blank">REST APIs</a> and combines the two legacy methods into one.</p>
-    <p class="impt"><b>Note:</b> This payment module supports Zen Cart versions 1.5.8a through 2.1.0 <b>only</b>! If your site uses Zen Cart 2.2.0 or later, the payment module is provided as an encapsulated plugin as part of the Zen Cart distribution.</p>
+    <p class="impt"><b>Note:</b> This version of the payment module supports Zen Cart versions 1.5.8a through 2.1.0 <b>only</b>! If your site uses Zen Cart 2.2.0 or later, the payment module is provided as an encapsulated plugin as part of the Zen Cart distribution.</p>
     <p>The module's operation has been validated &hellip;</p>
     <ol>
         <li>With PHP versions 7.0 through 8.5; <b>PHP versions less than 7.0 will result in fatal PHP errors!</b></li>
         <li>In Zen Cart's 3-page checkout environment (v1.5.8a, v2.0.x and v2.1.0)</li>
-        <li>With <a href="https://www.zen-cart.com/downloads.php?do=file&id=2095" target="_blank">One-Page Checkout</a> (OPC), v2.4.6-2.5.5<ol type="a">
+        <li>With <a href="https://www.zen-cart.com/downloads.php?do=file&id=2095" target="_blank">One-Page Checkout</a> (OPC), v2.5.4-v2.6.2<ol type="a">
             <li>Using <em>OPC</em>'s guest-checkout feature.</li>
             <li>Both requiring confirmation and not!</li>
         </ol></li>
-        <li>With both the built-in <var>responsive_classic</var> and <a href="https://www.zen-cart.com/downloads.php?do=file&id=2191" target="_blank"><var>ZCA Bootstrap</var></a> (v3.6.2-v3.7.8) templates.</li>
+        <li>With both the built-in <var>responsive_classic</var> and <a href="https://www.zen-cart.com/downloads.php?do=file&id=2191" target="_blank"><var>ZCA Bootstrap</var></a> (v3.7.8-v3.8.0) templates.</li>
     </ol>
     <p>For additional information, refer to the payment-module's <a href="https://github.com/lat9/paypalr/wiki" target="_blank">wiki articles</a>.</p>
     <p><b>Credits:</b> CSS-based spinner compliments of <a href="https://loading.io/css/" target="_blank">loading.io css spinner</a>.</p>
@@ -201,7 +201,7 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.3-beta1, 2026-06-17 (lat9 and drbyte)<ul>
+        <li>v1.3.3, 2026-07-12 (lat9 and drbyte)<ul>
             <li>BUGFIX: Various sanitizing changes, ported from <a href="https://github.com/zencart/paypalr" target="_blank">the encapsulated version.</a></li>
             <li>BUGFIX: Various 'hardening' changes, also ported from above.</li>
             <li>The following files were changed:<ol>
