@@ -6,7 +6,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.3.3
+ * Last updated: v1.3.4
  */
 use PayPalRestful\Admin\AdminMain;
 use PayPalRestful\Admin\DoAuthorization;
@@ -28,7 +28,7 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    const CURRENT_VERSION = '1.3.3';
+    const CURRENT_VERSION = '1.3.4';
 
     const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
@@ -480,7 +480,7 @@ class paypalr extends base
                                   ON w2.webhook_id = w1.webhook_id
                                  AND w2.id < w1.id"
                         );
-                        if ($sniffer->indexExists(TABLE_PAYPAL_WEBHOOKS, 'idx_pprwebhook_unique') === false) {
+                        if ($this->indexExists(TABLE_PAYPAL_WEBHOOKS, 'idx_pprwebhook_unique') === false) {
                             $db->Execute(
                                 "ALTER TABLE " . TABLE_PAYPAL_WEBHOOKS . "
                                    ADD UNIQUE KEY idx_pprwebhook_unique (webhook_id)"
@@ -504,6 +504,20 @@ class paypalr extends base
               WHERE configuration_key = 'MODULE_PAYMENT_PAYPALR_VERSION'
               LIMIT 1"
         );
+    }
+
+    /**
+     * @since ZC v2.1.0, paypalr v1.3.4
+     */
+    protected function indexExists(string $table_name, string $index_name): bool
+    {
+        global $db;
+
+        $check = $db->Execute(
+            'SHOW INDEX FROM `' . $db->prepare_input($table_name) . '` ' .
+            "WHERE `Key_name` = '" . $db->prepare_input($index_name) . "'"
+        );
+        return !$check->EOF;
     }
 
     protected function checkCardsAcceptedForSite(): bool
