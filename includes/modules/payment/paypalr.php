@@ -1796,7 +1796,7 @@ class paypalr extends base
                         break;
 
                     case '00N7':    //- CVV check failed
-                    case '1380':    //- Invalid card verification value
+                    case '1382':    //- Invalid card verification value
                     case '5110':    //- CVV check failed
                         $response_message = sprintf(MODULE_PAYMENT_PAYPALR_TEXT_CVV_FAILED, $card_type, $last_digits);
                         break;
