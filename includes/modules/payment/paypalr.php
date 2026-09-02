@@ -6,7 +6,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.3.4
+ * Last updated: v1.3.5
  */
 use PayPalRestful\Admin\AdminMain;
 use PayPalRestful\Admin\DoAuthorization;
@@ -28,7 +28,7 @@ use PayPalRestful\Zc2Pp\CreatePayPalOrderRequest;
  */
 class paypalr extends base
 {
-    const CURRENT_VERSION = '1.3.4';
+    const CURRENT_VERSION = '1.3.5-beta1';
 
     const REDIRECT_LISTENER = HTTP_SERVER . DIR_WS_CATALOG . 'ppr_listener.php';
 
@@ -1196,11 +1196,16 @@ class paypalr extends base
         $order_info = $this->getOrderTotalsInfo();
 
         // -----
-        // Create a GUID (Globally Unique IDentifier) for the order's
+        // Build the request for the PayPal order's initial creation.
+        //
+        global $order, $zcObserverPaypalrestful;
+        $create_order_request = new CreatePayPalOrderRequest($ppr_type, $order, $this->ccInfo, $order_info, $zcObserverPaypalrestful->getOrderTotalChanges());
+
+        // -----
+        // Create a GUID (Globally Unique IDentifier) for the PayPal order's
         // current 'state'.
         //
-        global $order;
-        $order_guid = $this->createOrderGuid($order, $ppr_type);
+        $order_guid = $this->createOrderGuid($create_order_request->get());
 
         // -----
         // If the PayPal order been previously created and the order's GUID
@@ -1211,12 +1216,6 @@ class paypalr extends base
             $this->log->write("\ncreatePayPalOrder($ppr_type), no change in order GUID ($order_guid); nothing further to do.\n");
             return true;
         }
-
-        // -----
-        // Build the request for the PayPal order's initial creation.
-        //
-        global $zcObserverPaypalrestful;
-        $create_order_request = new CreatePayPalOrderRequest($ppr_type, $order, $this->ccInfo, $order_info, $zcObserverPaypalrestful->getOrderTotalChanges());
 
         // -----
         // If the order's request-creation resulted in a calculation mismatch,
@@ -1299,20 +1298,16 @@ class paypalr extends base
 
     // -----
     // Create an idempotent GUID to accompany the to-be-created PayPal order by
-    // hashing the base order's information and, if paying via card, the card
-    // information as well.
+    // hashing the PayPal request.
     //
     // Note: Including the transaction-mode (AUTHORIZE vs. CAPTURE), too ... just
     // in case the site changes that mode while a customer's order is in-progress.
     //
-    protected function createOrderGuid(\order $order, string $ppr_type): string
+    protected function createOrderGuid(array $paypal_order_request): string
     {
         $_SESSION['PayPalRestful']['CompletedOrders'] = $_SESSION['PayPalRestful']['CompletedOrders'] ?? 0;
-        unset($order->info['ip_address']);
-        $hash_data = MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE . json_encode($order) . $_SESSION['securityToken'] . $_SESSION['PayPalRestful']['CompletedOrders'];
-        if ($ppr_type !== 'paypal') {
-            $hash_data .= json_encode($this->ccInfo);
-        }
+        unset($paypal_order_request['purchase_units'][0]['invoice_id']);
+        $hash_data = zen_config('MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE') . json_encode($paypal_order_request) . $_SESSION['securityToken'] . $_SESSION['PayPalRestful']['CompletedOrders'];
         $hash = hash('sha256', $hash_data);
         return
             substr($hash,  0,  8) . '-' .
@@ -1642,16 +1637,16 @@ class paypalr extends base
         $order->info['cc_expires'] = ''; //- $this->ccInfo['expiry_month'] . substr($this->ccInfo['expiry_year'], -2);
 
         // -----
-        // Create a GUID (Globally Unique IDentifier) for the order's
-        // current 'state'.
-        //
-        $order_guid = $this->createOrderGuid($order, 'card');
-
-        // -----
         // Build the request for the PayPal card-payment order's creation.
         //
         global $zcObserverPaypalrestful;
         $create_order_request = new CreatePayPalOrderRequest('card', $order, $this->ccInfo, $order_info, $zcObserverPaypalrestful->getOrderTotalChanges());
+
+        // -----
+        // Create a GUID (Globally Unique IDentifier) for the order's
+        // current 'state'.
+        //
+        $order_guid = $this->createOrderGuid($create_order_request->get());
 
         // -----
         // Send the request off to register the credit-card order at PayPal.
