@@ -597,6 +597,15 @@ class PayPalRestfulApi extends ErrorInfo
             $this->log->write("==> End webhookVerifyByPostback (failed)", true);
             return null;
         }
+        /**
+         * A response carrying no verification_status tells us nothing either way.
+         * Report that as indeterminate rather than as a failed verification, so the
+         * caller can leave the event to be delivered again.
+         */
+        if (!isset($response['verification_status'])) {
+            $this->log->write("==> End webhookVerifyByPostback (no verification_status returned)", true);
+            return null;
+        }
         $this->log->write("==> End webhookVerifyByPostback (success)", true);
         return ($response['verification_status'] === 'SUCCESS');
     }
