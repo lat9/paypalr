@@ -232,6 +232,13 @@ class WebhookResponder
         if ($parsed === false || strtolower($parsed['scheme'] ?? '') !== 'https') {
             return false;
         }
+        /**
+         * PayPal publishes its certificates over standard HTTPS.  An explicit port
+         * other than 443 is not somewhere we have any reason to go looking.
+         */
+        if (isset($parsed['port']) && (int)$parsed['port'] !== 443) {
+            return false;
+        }
         // Normalize: lowercase and strip optional trailing FQDN dot ("api.paypal.com." is valid DNS)
         $host = strtolower(rtrim($parsed['host'] ?? '', '.'));
         // Accept paypal.com and any subdomain — covers api.paypal.com, api.sandbox.paypal.com, etc.
