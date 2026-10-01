@@ -69,7 +69,7 @@ class WebhookController
         // This should never happen, but we must abort if verification fails.
         if ($status === false) {
             $this->ppr_logger->write('ppr_webhook FAILED VERIFICATION', false, 'before');
-            // The verifier already sent an HTTP response, so we just exit here by returning false to the ppr_webhook handler script.
+            // The verifier has already set the HTTP response code, so we just exit here by returning false to the ppr_webhook handler script.
             return false;
         }
 
