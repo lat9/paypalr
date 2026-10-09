@@ -38,7 +38,8 @@ class WebhookResponder
     {
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
         $data = $this->webhook->getJsonBody();
-        if (array_key_exists('PAYPAL-AUTH-VERSION', $headers)
+        if ($this->webhook->getMethod() === 'POST'
+            && array_key_exists('PAYPAL-AUTH-VERSION', $headers)
             && array_key_exists('PAYPAL-AUTH-ALGO', $headers)
             && isset($data['event_type'])
             && \str_contains($this->webhook->getUserAgent(), 'PayPal/')
@@ -51,41 +52,62 @@ class WebhookResponder
 
     public function verify()
     {
+        /**
+         * Not a request we recognise as a webhook at all.  The controller checks
+         * shouldRespond() before calling here, so this guard only catches a caller
+         * that skipped it; no response code is set, because there is nothing to
+         * acknowledge and nothing for PayPal to re-deliver.
+         */
         if ($this->shouldRespond !== true) {
             return null;
         }
 
-        $valid = $this->doCrcCheck();
+        $valid = $this->determineValidity();
 
-        // Null means we couldn't complete a CRC check (ie: internal issue, not "failed validation"),
-        // so this falls through to trying a postback instead.
-        // If validateCertUrl() returns false, we will abort.
-        if ($valid === null) {
-            $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
-            if (!isset($headers['PAYPAL-TRANSMISSION-ID'], $headers['PAYPAL-TRANSMISSION-TIME'], $headers['PAYPAL-TRANSMISSION-SIG'], $headers['PAYPAL-CERT-URL'])) {
-                return null; // required headers missing; cannot attempt postback either
-            }
-            $certUrl = trim($headers['PAYPAL-CERT-URL']);
-            if (!$this->validateCertUrl($certUrl)) {
-                return false;
-            }
-            $valid = $this->verifyByPostback($certUrl);
-        }
-
-        // null means "we" (internally) couldn't complete a verification attempt (and we *will* want PayPal to see it as failed-to-complete, so they keep re-sending)
-        // false means "failed validation"
-        // true means "passed validation"
-        if ($valid !== null) {
-            // send a 200 response to acknowledge that we received the webhook
-            http_response_code(200);
-        } else {
-            // Verification could not complete (cert unreachable, OpenSSL absent, access-token
-            // invalid, etc.).  Signal a transient server error so PayPal retries delivery
-            // rather than silently treating the unverified event as acknowledged.
-            http_response_code(500);
-        }
+        /**
+         * One exit, one decision, so that every outcome below carries a response code:
+         *
+         *  - true  => verification passed; acknowledge the delivery.
+         *  - false => verification failed; acknowledge it anyway, since re-sending
+         *             the same payload would fail in exactly the same way.
+         *  - null  => verification could not be completed (CRC unavailable, cert
+         *             unreachable, OpenSSL absent, invalid access token, no verdict
+         *             from PayPal).  Report a transient server error so the delivery
+         *             is retried rather than being treated as handled.
+         */
+        http_response_code($valid === null ? 500 : 200);
 
         return $valid;
+    }
+
+    /**
+     * Decide whether the webhook's signature is genuine, without touching the
+     * HTTP response; verify() owns that.
+     *
+     * @return bool|null  null when no verdict could be reached
+     */
+    protected function determineValidity()
+    {
+        $valid = $this->doCrcCheck();
+        if ($valid !== null) {
+            return $valid;
+        }
+
+        /**
+         * The CRC check could not be completed, so fall back to asking PayPal to
+         * verify the signature for us.
+         */
+        $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
+        if (!isset($headers['PAYPAL-TRANSMISSION-ID'], $headers['PAYPAL-TRANSMISSION-TIME'], $headers['PAYPAL-TRANSMISSION-SIG'], $headers['PAYPAL-CERT-URL'])) {
+            return null; // required headers missing; cannot attempt a postback either
+        }
+
+        $certUrl = trim($headers['PAYPAL-CERT-URL']);
+        if (!$this->validateCertUrl($certUrl)) {
+            return false;
+        }
+
+        return $this->verifyByPostback($certUrl);
     }
 
     /**
@@ -146,6 +168,16 @@ class WebhookResponder
      */
     protected function verifyByPostback(string $certUrl)
     {
+        /**
+         * PayPal requires the subscribed-webhook id to answer a signature postback.
+         * Without one the request cannot be completed, so return the same
+         * "unable to verify" result up front rather than spending an API call
+         * (and an access-token refresh) to be told so.
+         */
+        if (empty($this->webhook_listener_subscribe_id)) {
+            return null;
+        }
+
         $headers = array_change_key_case($this->webhook->getHeaders(), CASE_UPPER);
         if (!isset($headers['PAYPAL-TRANSMISSION-ID'], $headers['PAYPAL-TRANSMISSION-TIME'], $headers['PAYPAL-TRANSMISSION-SIG'])) {
             return null; // required headers absent; cannot build a valid postback payload
@@ -172,9 +204,12 @@ class WebhookResponder
         }
 
         // Now that the access token is confirmed, we submit this postback via CURL.
-        $result = $ppr->webhookVerifyByPostback($params_array);
-
-        return $result === true;
+        /**
+         * A null result means PayPal returned no verdict (interface error, rate
+         * limit, unexpected response); pass that through rather than flattening it
+         * to "failed", so the event is left to be delivered again.
+         */
+        return $ppr->webhookVerifyByPostback($params_array);
     }
 
     /**
@@ -195,6 +230,13 @@ class WebhookResponder
     {
         $parsed = parse_url($url);
         if ($parsed === false || strtolower($parsed['scheme'] ?? '') !== 'https') {
+            return false;
+        }
+        /**
+         * PayPal publishes its certificates over standard HTTPS.  An explicit port
+         * other than 443 is not somewhere we have any reason to go looking.
+         */
+        if (isset($parsed['port']) && (int)$parsed['port'] !== 443) {
             return false;
         }
         // Normalize: lowercase and strip optional trailing FQDN dot ("api.paypal.com." is valid DNS)
