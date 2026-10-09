@@ -6,7 +6,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  *
- * Last updated: v1.3.5
+ * Last updated: v1.3.6
  */
 use PayPalRestful\Admin\AdminMain;
 use PayPalRestful\Admin\DoAuthorization;
@@ -1307,7 +1307,7 @@ class paypalr extends base
     {
         $_SESSION['PayPalRestful']['CompletedOrders'] = $_SESSION['PayPalRestful']['CompletedOrders'] ?? 0;
         unset($paypal_order_request['purchase_units'][0]['invoice_id']);
-        $hash_data = zen_config('MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE') . json_encode($paypal_order_request) . $_SESSION['securityToken'] . $_SESSION['PayPalRestful']['CompletedOrders'];
+        $hash_data = MODULE_PAYMENT_PAYPALR_TRANSACTION_MODE . json_encode($paypal_order_request) . $_SESSION['securityToken'] . $_SESSION['PayPalRestful']['CompletedOrders'];
         $hash = hash('sha256', $hash_data);
         return
             substr($hash,  0,  8) . '-' .
@@ -1545,7 +1545,7 @@ class paypalr extends base
         $captured_value = $payment['amount']['value'] ?? '';
         $captured_currency = $payment['amount']['currency_code'] ?? '';
         if ($captured_value !== $expected_value || $captured_currency !== $paypal_currency) {
-            $this->order_status = (int)zen_config('MODULE_PAYMENT_PAYPALR_ORDER_PENDING_STATUS_ID');
+            $this->order_status = (int)MODULE_PAYMENT_PAYPALR_ORDER_PENDING_STATUS_ID;
             $order->info['order_status'] = $this->order_status;
             $this->orderInfo['admin_alert_needed'] = true;
 
