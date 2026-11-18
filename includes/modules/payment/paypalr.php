@@ -919,7 +919,7 @@ class paypalr extends base
                     'tag' => 'ppr-paypal',
                 ],
                 [
-                    'title' => '<span class="ppr-choice-label">' . MODULE_PAYMENT_PALPALR_CHOOSE_CARD . '</span>' ,
+                    'title' => '<span class="ppr-choice-label">' . MODULE_PAYMENT_PAYPALR_CHOOSE_CARD . '</span>' ,
                     'field' =>
                         '<script>' . file_get_contents(DIR_WS_MODULES . 'payment/paypal/PayPalRestful/jquery.paypalr.checkout.js') . '</script>' .
                         '<div id="ppr-choice-card" class="ppr-button-choice">' .
@@ -1326,7 +1326,7 @@ class paypalr extends base
     {
         if ($_SESSION['PayPalRestful']['Order']['payment_source'] !== 'card') {
             return [
-                'title' => MODULE_PAYMENT_PALPALR_PAYING_WITH_PAYPAL,
+                'title' => MODULE_PAYMENT_PAYPALR_PAYING_WITH_PAYPAL,
             ];
         }
 
