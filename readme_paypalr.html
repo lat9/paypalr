@@ -201,11 +201,12 @@ table table {
     <h2>Version History</h2>
     <p>This section identifies version-specific changes to the payment module.</p>
     <ul>
-        <li>v1.3.6-beta2, 2026-11-06 (lat9, drbyte)<ul>
+        <li>v1.3.6-beta2, 2026-11-18 (lat9, drbyte)<ul>
             <li>BUGFIX: Webhook responder tidying, carried over from the encapsulated version.</li>
             <li>BUGFIX: Correct wording for wallet vs. credit-card selections; positioning is template-dependent.</li>
             <li>BUGFIX: Remove use of <code>zen_config</code>; it doesn't exist until zc300.</li>
             <li>BUGFIX: Correct PHP Warnings when the module's session-variable &quot;goes missing&quot;.</li>
+            <li>BUGFIX: Correct naming of non-standard language-file &quot;keys&quot;.</li>
             <li>The following files were changed:<ol>
                 <li>/includes/languages/english/modules/payment/lang.paypalr.php</li>
                 <li>/includes/modules/payment/paypal/PayPalRestful/Api/PayPalRestfulApi.php</li>
